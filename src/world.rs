@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 
-
 pub struct WorldPlugin;
 
 impl Plugin for WorldPlugin {
@@ -21,16 +20,23 @@ fn spawn_light(mut commands: Commands) {
     commands.spawn(light);
 }
 
-
-
 fn spawn_floor(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    // let debug_material = materials.add(StandardMaterial {
+    //     base_color_texture: Some(images.add(uv_debug_texture())),
+    //     ..default()
+    // });
+
     let floor = PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane::from_size(15.0))),
-        material: materials.add(Color::DARK_GREEN.into()),
+        mesh: meshes.add(Plane3d::default().mesh().size(50.0, 50.0).subdivisions(10)),
+        // mesh: meshes.add(Mesh::from(shape::Plane::from_size(15.0))),
+        material: materials.add(StandardMaterial {
+        base_color: Color::srgb(1., 0., 0.),
+        ..Default::default()
+    }),
         ..default()
     };
     commands.spawn(floor);

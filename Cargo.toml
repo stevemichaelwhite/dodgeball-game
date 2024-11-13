@@ -10,7 +10,8 @@ opt-level = 1
 opt-level = 3
 
 [dependencies]
-bevy = {version = "0.11", features = ["dynamic_linking"]}
+bevy = {version = "0.14.2", features = ["dynamic_linking"]}
+bevy_third_person_camera = "0.1.14"
 
 [target.x86_64-unknown-linux-gnu]
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]
