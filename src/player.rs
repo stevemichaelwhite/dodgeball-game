@@ -77,6 +77,7 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
                 outer_angle: 0.6,
                 inner_angle: 0.5,
                 intensity: 1000000.0,
+                shadows_enabled: true,
                 ..default()
             },
             transform: Transform::from_xyz(0.0, 0.0, -0.5),
