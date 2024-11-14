@@ -15,7 +15,11 @@ fn spawn_camera(mut commands: Commands) {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        ThirdPersonCamera::default(),
+        ThirdPersonCamera {
+            zoom: Zoom::new(1.5, 20.0),
+            sensitivity: Vec2::new(2.5, 2.5),
+            ..default()
+        },
     );
     commands.spawn(camera);
 }

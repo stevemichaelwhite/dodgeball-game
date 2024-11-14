@@ -77,7 +77,7 @@ fn spawn_player(
         },
         Speed(5.0),
         Player,
-        // ThirdPersonCameraTarget,
+        ThirdPersonCameraTarget,
     );
     commands.spawn(player);
 }
