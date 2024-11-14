@@ -69,7 +69,22 @@ fn player_movement(
 }
 
 fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
-    let flashlight = SpotLightBundle::default();
+    //216, 224, 69, 255
+    let flashlight = (
+        SpotLightBundle {
+            spot_light: SpotLight {
+                color: Srgba::rgba_u8(216, 224, 69, 255).into(),
+                outer_angle: 0.6,
+                inner_angle: 0.5,
+                intensity: 1000000.0,
+                ..default()
+            },
+            transform: Transform::from_xyz(0.0, 0.0, -0.5),
+
+            ..default()
+        },
+        Name::new("Flashlight"),
+    );
     let player = (
         SceneBundle {
             scene: assets.load("Player.gltf#Scene0"),
@@ -79,6 +94,7 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
         Speed(5.0),
         Player,
         ThirdPersonCameraTarget,
+        Name::new("Player"),
     );
     commands.spawn(player).with_children(|parent| {
         parent.spawn(flashlight);

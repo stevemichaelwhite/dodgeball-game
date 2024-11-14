@@ -11,6 +11,7 @@ mod world;
 use camera::CameraPlugin;
 use player::PlayerPlugin;
 use world::WorldPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 fn main() {
     App::new()
@@ -20,6 +21,7 @@ fn main() {
             CameraPlugin,
             WorldPlugin,
             ThirdPersonCameraPlugin,
+            WorldInspectorPlugin::new(),
         ))
         .run();
 }
