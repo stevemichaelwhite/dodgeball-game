@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 pub struct WorldPlugin;
 
@@ -54,9 +55,11 @@ fn spawn_floor(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    let ground_size = 10.0;
+    let ground_height = 0.1;
     let floor = (
         PbrBundle {
-            mesh: meshes.add(Plane3d::default().mesh().size(10.0, 10.0).subdivisions(10)),
+            mesh: meshes.add(Plane3d::default().mesh().size(ground_size, ground_size).subdivisions(10)),
             // mesh: meshes.add(Mesh::from(shape::Plane::from_size(15.0))),
             material: materials.add(StandardMaterial {
                 base_color: Srgba::hex("#21ad1a").unwrap().into(),
@@ -67,8 +70,10 @@ fn spawn_floor(
             ..default()
         },
         Name::new("Floor"),
+        Collider::cuboid(ground_size, ground_height, ground_size),
     );
     commands.spawn(floor);
+    
 }
 
 fn spawn_objects(
