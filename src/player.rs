@@ -1,4 +1,5 @@
-use bevy::prelude::*;
+use bevy::{input::InputSystem, prelude::*};
+
 use bevy_rapier3d::prelude::*;
 use bevy_third_person_camera::*;
 
@@ -11,7 +12,9 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_player)
+        app.init_resource::<MovementInput>()
+            .add_systems(Startup, spawn_player)
+            .add_systems(PreUpdate, handle_input.after(InputSystem))
             .add_systems(FixedUpdate, player_movement);
     }
 }
@@ -19,24 +22,51 @@ impl Plugin for PlayerPlugin {
 #[derive(Component)]
 struct Player;
 
-#[derive(Component)]
-struct Speed(f32);
+/// Keyboard input vector
+#[derive(Default, Resource, Deref, DerefMut)]
+struct MovementInput(Vec3);
 
-// #[derive(Bundle)]
-// struct PlayerBundle {
-//     pbr_bundle: PbrBundle,
+fn handle_input(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut movement: ResMut<MovementInput>,
+    // mut look: ResMut<LookInput>,
+    // mut mouse_events: EventReader<MouseMotion>,
+) {
+    if keyboard.pressed(KeyCode::KeyW) {
+        movement.z -= 1.0;
+    }
+    if keyboard.pressed(KeyCode::KeyS) {
+        movement.z += 1.0
+    }
+    if keyboard.pressed(KeyCode::KeyA) {
+        movement.x -= 1.0;
+    }
+    if keyboard.pressed(KeyCode::KeyD) {
+        movement.x += 1.0
+    }
+    **movement = movement.normalize_or_zero();
+    if keyboard.pressed(KeyCode::ShiftLeft) {
+        **movement *= 2.0;
+    }
+    // if keyboard.pressed(KeyCode::Space) {
+    //     movement.y = 1.0;
+    // }
 
-// }
+    // for event in mouse_events.read() {
+    //     look.x -= event.delta.x * MOUSE_SENSITIVITY;
+    //     look.y -= event.delta.y * MOUSE_SENSITIVITY;
+    //     look.y = look.y.clamp(-89.9, 89.9); // Limit pitch
+    // }
+}
 
 fn player_movement(
-    keys: Res<ButtonInput<KeyCode>>,
+    mut input: ResMut<MovementInput>,
     time: Res<Time>,
     mut player_q: Query<
         (
             &mut Transform,
             &mut KinematicCharacterController,
             Option<&KinematicCharacterControllerOutput>,
-            &Speed,
         ),
         With<Player>,
     >,
@@ -44,65 +74,49 @@ fn player_movement(
     mut vertical_movement: Local<f32>,
     mut grounded_timer: Local<f32>,
 ) {
-    for (mut player_transform, mut controller, output, player_speed) in player_q.iter_mut() {
+    for (mut player_transform, mut controller, output) in player_q.iter_mut() {
         let cam = match cam_q.get_single() {
             Ok(c) => c,
             Err(e) => Err(format!("Error retrieving camera: {}", e)).unwrap(),
         };
 
-        let mut direction = Vec3::ZERO;
 
-        //forward
-        if keys.pressed(KeyCode::KeyW) {
-            direction += *cam.forward();
-        }
-
-        //back
-        if keys.pressed(KeyCode::KeyS) {
-            direction += *cam.back();
-        }
-
-        //left
-        if keys.pressed(KeyCode::KeyA) {
-            direction += *cam.left();
-        }
-
-        //back
-        if keys.pressed(KeyCode::KeyD) {
-            direction += *cam.right();
-        }
-
-        // direction.y = 0.0;
+        // input.y = 0.0;
         let delta_time = time.delta_seconds();
         // Retrieve input
-        let mut movement = Vec3::new(direction.x, 0.0, direction.z) * MOVEMENT_SPEED;
-        let jump_speed = direction.y * JUMP_SPEED;
+        let mut movement = Vec3::new(input.x, 0.0, input.z) * MOVEMENT_SPEED;
+        // let jump_speed = input.y * JUMP_SPEED;
+
+        // Clear input
+        **input = Vec3::ZERO;
 
         // Check physics ground check
-        if output.map(|o| o.grounded).unwrap_or(false) {
-            *grounded_timer = GROUND_TIMER;
-            *vertical_movement = 0.0;
-        }
+        // if output.map(|o| o.grounded).unwrap_or(false) {
+        //     *grounded_timer = GROUND_TIMER;
+        //     *vertical_movement = 0.0;
+        // }
 
         // If we are grounded we can jump
-        if *grounded_timer > 0.0 {
-            *grounded_timer -= delta_time;
-            // If we jump we clear the grounded tolerance
-            if jump_speed > 0.0 {
-                *vertical_movement = jump_speed;
-                *grounded_timer = 0.0;
-            }
-        }
+        // if *grounded_timer > 0.0 {
+        //     *grounded_timer -= delta_time;
+        //     // If we jump we clear the grounded tolerance
+        //     if jump_speed > 0.0 {
+        //         *vertical_movement = jump_speed;
+        //         *grounded_timer = 0.0;
+        //     }
+        // }
+
         movement.y = *vertical_movement;
-        *vertical_movement += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
+        movement.y = 0.0;
+        // *vertical_movement += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
         controller.translation = Some(player_transform.rotation * (movement * delta_time));
 
-        // let movement = direction.normalize_or_zero() * player_speed.0 * time.delta_seconds();
+        // let movement = input.normalize_or_zero() * player_speed.0 * time.delta_seconds();
         // player_transform.translation += movement;
 
         //
-        // if direction.length_squared() > 0.0 {
-        //     player_transform.look_to(direction, Vec3::Y)
+        // if input.length_squared() > 0.0 {
+        //     player_transform.look_to(input, Vec3::Y)
         // }
     }
 }
@@ -128,15 +142,14 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
     let player = (
         SceneBundle {
             scene: assets.load("Player.gltf#Scene0"),
-            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+            transform: Transform::from_xyz(0.0, 0.8, 0.0),
             ..default()
         },
-        Speed(5.0),
         Player,
-        // ThirdPersonCameraTarget,
+        ThirdPersonCameraTarget,
         Name::new("Player"),
-        Collider::round_cylinder(0.9, 0.3, 0.2),
-        RigidBody::Dynamic,
+        Collider::round_cylinder(0.6, 0.3, 0.2),
+        // RigidBody::Dynamic,
         KinematicCharacterController {
             custom_mass: Some(5.0),
             up: Vec3::Y,
