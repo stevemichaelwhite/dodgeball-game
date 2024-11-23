@@ -1,4 +1,4 @@
-use bevy::{input::InputSystem, prelude::*};
+use bevy::prelude::*;
 
 use bevy_rapier3d::prelude::*;
 use bevy_third_person_camera::*;
@@ -12,9 +12,9 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MovementInput>()
+        app
+        // .init_resource::<MovementInput>()
             .add_systems(Startup, spawn_player)
-            // .add_systems(PreUpdate, handle_input.after(InputSystem))
             .add_systems(Update, player_movement);
     }
 }
@@ -22,39 +22,6 @@ impl Plugin for PlayerPlugin {
 #[derive(Component)]
 struct Player;
 
-/// Keyboard input vector
-#[derive(Default, Resource, Deref, DerefMut)]
-struct MovementInput(Vec3);
-
-// fn handle_input(
-//     keyboard: Res<ButtonInput<KeyCode>>,
-//     mut movement: ResMut<MovementInput>,
-//     cam_q: Query<&Transform, (With<Camera3d>, Without<Player>)>,
-// ) {
-//     let cam = match cam_q.get_single() {
-//         Ok(c) => c,
-//         Err(e) => Err(format!("Error retrieving camera: {}", e)).unwrap(),
-//     };
-
-//     let mut direction = Vec3::ZERO;
-//     if keyboard.pressed(KeyCode::KeyW) {
-//         direction -= *cam.forward();
-//     }
-//     if keyboard.pressed(KeyCode::KeyS) {
-//         direction += *cam.back();
-//     }
-//     if keyboard.pressed(KeyCode::KeyA) {
-//         direction -= *cam.left();
-//     }
-//     if keyboard.pressed(KeyCode::KeyD) {
-//         direction += *cam.right();
-//     }
-//     **movement = direction.normalize_or_zero();
-//     if keyboard.pressed(KeyCode::ShiftLeft) {
-//         **movement *= 2.0;
-//     }
-
-// }
 
 fn player_movement(
     keys: Res<ButtonInput<KeyCode>>,
@@ -72,7 +39,6 @@ fn player_movement(
 ) {
 
     
-
     for (mut player_transform, mut _controller, _output) in player_q.iter_mut() {
 
 
@@ -84,33 +50,27 @@ fn player_movement(
 
         let mut direction = Vec3::ZERO;
 
-        //forward
         if keys.pressed(KeyCode::KeyW) {
             direction += *cam.forward();
         }
 
-        //back
         if keys.pressed(KeyCode::KeyS) {
             direction += *cam.back();
         }
 
-        //left
         if keys.pressed(KeyCode::KeyA) {
             direction += *cam.left();
         }
 
-        //back
         if keys.pressed(KeyCode::KeyD) {
             direction += *cam.right();
         }
 
         direction.y = 0.0;
         let delta_time = time.delta_seconds();
-        // Retrieve input
      
         let movement =  direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
   
-
         player_transform.translation += movement;
 
         //
