@@ -70,7 +70,8 @@ fn spawn_floor(
             ..default()
         },
         Name::new("Floor"),
-        Collider::cuboid(ground_size, ground_height, ground_size),
+        Collider::cuboid(ground_size/2.0, ground_height, ground_size/2.0),
+        // RigidBody::Fixed,
     );
     commands.spawn(floor);
     

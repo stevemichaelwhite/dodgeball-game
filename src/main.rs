@@ -26,7 +26,7 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_systems(Startup, setup_physics)
-        .add_systems(Update, print_ball_altitude)
+        // .add_systems(Update, print_ball_altitude)
         .run();
 }
 
@@ -44,10 +44,10 @@ fn setup_physics(mut commands: Commands) {
         .insert(TransformBundle::from(Transform::from_xyz(0.0, 4.0, 0.0)));
 }
 
-fn print_ball_altitude(mut positions: Query<&mut Transform, With<RigidBody>>) {
-    for mut transform in positions.iter_mut() {
-        dbg!(transform.rotation.to_axis_angle());
-        transform.rotation = Quat::from_rotation_z(270_f32.to_radians());
-        //println!("Ball altitude: {}", transform.translation.y);
-    }
-}
+// fn print_ball_altitude(mut positions: Query<&mut Transform, With<RigidBody>>) {
+//     for mut transform in positions.iter_mut() {
+//         dbg!(transform.rotation.to_axis_angle());
+//         transform.rotation = Quat::from_rotation_z(270_f32.to_radians());
+//         //println!("Ball altitude: {}", transform.translation.y);
+//     }
+// }
