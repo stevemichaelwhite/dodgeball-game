@@ -94,12 +94,12 @@ fn player_movement(
 
         
         direction.y = 0.0;
-        let movement =  direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
-        // movement.y = *vertical_movement;
+        let mut movement =  direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
+        movement.y = *vertical_movement;
         
-        
-        controller.translation = Some(Vec3::new(0.0,*vertical_movement, 0.0));
-        player_transform.translation += movement;
+        controller.translation = Some(movement);
+        // controller.translation = Some(Vec3::new(0.0,*vertical_movement, 0.0));
+        // player_transform.translation += movement;
 
         //
         if direction.length_squared() > 0.0 {
