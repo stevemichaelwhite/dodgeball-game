@@ -5,8 +5,9 @@ use bevy_third_person_camera::*;
 
 const GROUND_TIMER: f32 = 0.5;
 const MOVEMENT_SPEED: f32 = 8.0;
-const JUMP_SPEED: f32 = 1.5;
-const GRAVITY: f32 = -9.81/5.0;
+const JUMP_SPEED: f32 = 1.2;
+const GRAVITY: f32 = -9.81/3.0;
+const TERMINAL_VELOCITY: f32 = -54.0/3.0;
 
 pub struct PlayerPlugin;
 
@@ -50,6 +51,7 @@ fn player_movement(
             Err(e) => Err(format!("Error retrieving camera: {}", e)).unwrap(),
         };
 
+        let mut jump_direction =0.0;
 
         let mut direction = Vec3::ZERO;
         // We need to remove the y component out of these
@@ -69,22 +71,21 @@ fn player_movement(
             direction += (*cam.right()).with_y(0.0);
         }
         if keys.pressed(KeyCode::KeyE) {
-            direction.y = 1.0;
+            jump_direction = 1.0;
         } 
 
 
         
         let delta_time = time.delta_seconds();
-        let jump_speed = direction.y * JUMP_SPEED;
+        let jump_speed = jump_direction * JUMP_SPEED;
+        
 
-        // let jump_speed = 1.0 * JUMP_SPEED;
         let is_grounded = output.map(|o| o.grounded).unwrap_or(false);
-        // let is_grounded = output.grounded;
-        // println!("is grounded: {is_grounded}");
         if is_grounded {
             *grounded_timer = GROUND_TIMER;
             *vertical_movement = 0.0;
         } 
+
         // If we are grounded we can jump
         if *grounded_timer > 0.0 {
             *grounded_timer -= delta_time;
@@ -96,10 +97,14 @@ fn player_movement(
         }
 
         
+
         // direction.y = 0.0;
         let mut movement =  direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
-        movement.y = *vertical_movement;
         *vertical_movement += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
+        *vertical_movement = (*vertical_movement).max(TERMINAL_VELOCITY);
+        movement.y = *vertical_movement;
+        // movement.y = jump_speed;
+        
         
         controller.translation = Some(movement);
         // controller.translation = Some(Vec3::new(0.0,*vertical_movement, 0.0));
@@ -144,9 +149,9 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
         // RigidBody::KinematicPositionBased,
         KinematicCharacterController {
             // ..KinematicCharacterController::default()
-            custom_mass: Some(5.0),
+            custom_mass: Some(1.0),
             up: Vec3::Y,
-            offset: CharacterLength::Absolute(0.01),
+            offset: CharacterLength::Absolute(0.03),
             slide: true,
             autostep: Some(CharacterAutostep {
                 max_height: CharacterLength::Relative(0.3),
@@ -162,8 +167,9 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
             // snap_to_ground: None,
             ..default()
         },
+        
     );
-    commands.spawn(player).with_children(|parent| {
+    commands.spawn(player).insert(LockedAxes::TRANSLATION_LOCKED | LockedAxes::ROTATION_LOCKED).with_children(|parent| {
         parent.spawn(flashlight);
     });
 }
