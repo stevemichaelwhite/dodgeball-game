@@ -5,8 +5,8 @@ use bevy_third_person_camera::*;
 
 const GROUND_TIMER: f32 = 0.5;
 const MOVEMENT_SPEED: f32 = 8.0;
-// const JUMP_SPEED: f32 = 1.0;
-const GRAVITY: f32 = -9.81/4.0;
+const JUMP_SPEED: f32 = 1.5;
+const GRAVITY: f32 = -9.81/5.0;
 
 pub struct PlayerPlugin;
 
@@ -37,7 +37,7 @@ fn player_movement(
     >,
     cam_q: Query<&Transform, (With<Camera3d>, Without<Player>)>,
     mut vertical_movement: Local<f32>,
-    // mut grounded_timer: Local<f32>,
+    mut grounded_timer: Local<f32>,
 
 ) {
 
@@ -52,50 +52,54 @@ fn player_movement(
 
 
         let mut direction = Vec3::ZERO;
-
+        // We need to remove the y component out of these
         if keys.pressed(KeyCode::KeyW) {
-            direction += *cam.forward();
+            direction += (*cam.forward()).with_y(0.0);
         }
 
         if keys.pressed(KeyCode::KeyS) {
-            direction += *cam.back();
+            direction += (*cam.back()).with_y(0.0);
         }
 
         if keys.pressed(KeyCode::KeyA) {
-            direction += *cam.left();
+            direction += (*cam.left()).with_y(0.0);
         }
 
         if keys.pressed(KeyCode::KeyD) {
-            direction += *cam.right();
+            direction += (*cam.right()).with_y(0.0);
         }
+        if keys.pressed(KeyCode::KeyE) {
+            direction.y = 1.0;
+        } 
+
 
         
         let delta_time = time.delta_seconds();
+        let jump_speed = direction.y * JUMP_SPEED;
 
         // let jump_speed = 1.0 * JUMP_SPEED;
         let is_grounded = output.map(|o| o.grounded).unwrap_or(false);
         // let is_grounded = output.grounded;
         // println!("is grounded: {is_grounded}");
         if is_grounded {
-            // *grounded_timer = GROUND_TIMER;
+            *grounded_timer = GROUND_TIMER;
             *vertical_movement = 0.0;
-        } else {
-            // *vertical_movement = GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
-            *vertical_movement = -1.0 * delta_time ;
+        } 
+        // If we are grounded we can jump
+        if *grounded_timer > 0.0 {
+            *grounded_timer -= delta_time;
+            // If we jump we clear the grounded tolerance
+            if jump_speed > 0.0 {
+                *vertical_movement = jump_speed;
+                *grounded_timer = 0.0;
+            }
         }
-        // if *grounded_timer > 0.0 {
-        //     *grounded_timer -= delta_time;
-        //     // If we jump we clear the grounded tolerance
-        //     if jump_speed > 0.0 {
-        //         *vertical_movement = jump_speed;
-        //         *grounded_timer = 0.0;
-        //     }
-        // }
 
         
-        direction.y = 0.0;
+        // direction.y = 0.0;
         let mut movement =  direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
         movement.y = *vertical_movement;
+        *vertical_movement += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
         
         controller.translation = Some(movement);
         // controller.translation = Some(Vec3::new(0.0,*vertical_movement, 0.0));
@@ -139,24 +143,24 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
         // RigidBody::Dynamic,
         // RigidBody::KinematicPositionBased,
         KinematicCharacterController {
-            ..KinematicCharacterController::default()
-            // custom_mass: Some(5.0),
-            // up: Vec3::Y,
-            // offset: CharacterLength::Absolute(0.01),
-            // slide: true,
-            // autostep: Some(CharacterAutostep {
-            //     max_height: CharacterLength::Relative(0.3),
-            //     min_width: CharacterLength::Relative(0.5),
-            //     include_dynamic_bodies: false,
-            // }),
+            // ..KinematicCharacterController::default()
+            custom_mass: Some(5.0),
+            up: Vec3::Y,
+            offset: CharacterLength::Absolute(0.01),
+            slide: true,
+            autostep: Some(CharacterAutostep {
+                max_height: CharacterLength::Relative(0.3),
+                min_width: CharacterLength::Relative(0.5),
+                include_dynamic_bodies: false,
+            }),
             // Don’t allow climbing slopes larger than 45 degrees.
-            // max_slope_climb_angle: 45.0_f32.to_radians(),
+            max_slope_climb_angle: 45.0_f32.to_radians(),
             // Automatically slide down on slopes smaller than 30 degrees.
-            // min_slope_slide_angle: 30.0_f32.to_radians(),
-            // apply_impulse_to_dynamic_bodies: true,
+            min_slope_slide_angle: 30.0_f32.to_radians(),
+            apply_impulse_to_dynamic_bodies: true,
             // snap_to_ground: Some(CharacterLength::Absolute(0.5)),
             // snap_to_ground: None,
-            // ..default()
+            ..default()
         },
     );
     commands.spawn(player).with_children(|parent| {
