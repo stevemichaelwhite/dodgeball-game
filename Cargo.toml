@@ -14,6 +14,7 @@ bevy = {version = "0.14.2", features = ["dynamic_linking"]}
 bevy-inspector-egui = "0.27.0"
 bevy_third_person_camera = "0.1.14"
 bevy_rapier3d = { version = "*", features = [ "simd-stable", "debug-render-3d" ] }
+rand = "0.8.5"
 
 [target.x86_64-unknown-linux-gnu]
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]

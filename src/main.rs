@@ -40,8 +40,13 @@ fn setup_physics(mut commands: Commands) {
     commands
         .spawn(RigidBody::Dynamic)
         .insert(Collider::ball(0.5))
-        .insert(Restitution::coefficient(0.7))
-        .insert(TransformBundle::from(Transform::from_xyz(0.0, 4.0, 0.0)));
+        // .insert(AdditionalMassProperties::Mass(0.2))
+        .insert(Restitution::coefficient(0.9))
+        .insert(TransformBundle::from(Transform::from_xyz(0.0, 4.0, 0.0)))
+        .insert(Friction {
+            coefficient: 0.00,
+            combine_rule: CoefficientCombineRule::Min,
+        });
 }
 
 // fn print_ball_altitude(mut positions: Query<&mut Transform, With<RigidBody>>) {

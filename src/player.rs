@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-
+use rand::Rng;
 use bevy_rapier3d::prelude::*;
 use bevy_third_person_camera::*;
 
@@ -33,6 +33,7 @@ fn player_movement(
             &mut Transform,
             &mut KinematicCharacterController,
             Option<&KinematicCharacterControllerOutput>,
+            // &mut Collider,
         ),
         With<Player>,
     >,
@@ -43,7 +44,7 @@ fn player_movement(
 ) {
 
     
-    for (mut player_transform, mut controller, output) in player_q.iter_mut() {
+    let (mut player_transform, mut controller, output) = player_q.single_mut();
 
 
         let cam = match cam_q.get_single() {
@@ -102,6 +103,11 @@ fn player_movement(
         let mut movement =  direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
         *vertical_movement += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
         *vertical_movement = (*vertical_movement).max(TERMINAL_VELOCITY);
+        // let mut rng = rand::thread_rng();
+
+        // let jitter_vertical: f32 = rng.gen_range(-0.09..=0.09);
+        // *vertical_movement += jitter_vertical;
+
         movement.y = *vertical_movement;
         // movement.y = jump_speed;
         
@@ -114,7 +120,7 @@ fn player_movement(
         if direction.length_squared() > 0.0 {
             player_transform.look_to(direction, Vec3::Y)
         }
-    }
+    
 }
 
 fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
@@ -138,13 +144,13 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
     let player = (
         SceneBundle {
             scene: assets.load("Player.gltf#Scene0"),
-            transform: Transform::from_xyz(0.0, 2.8, 0.0),
+            transform: Transform::from_xyz(0.0, 0.8, 0.0),
             ..default()
         },
         Player,
         ThirdPersonCameraTarget,
         Name::new("Player"),
-        Collider::round_cylinder(0.6, 0.3, 0.2),
+        Collider::capsule_y(0.6, 0.3),
         // RigidBody::Dynamic,
         // RigidBody::KinematicPositionBased,
         KinematicCharacterController {
