@@ -77,6 +77,10 @@ fn spawn_floor(
     
 }
 
+#[derive(Component)]
+pub struct Cube;
+
+
 fn spawn_objects(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -85,7 +89,7 @@ fn spawn_objects(
 
 
     let mut create_cube =
-        |hdim_xyz: (f32, f32, f32), color_hex: String, xyz: (f32, f32, f32), name: String| -> (PbrBundle, Name, Collider, RigidBody) {
+        |hdim_xyz: (f32, f32, f32), color_hex: String, xyz: (f32, f32, f32), name: String| -> (PbrBundle, Name, Collider, RigidBody, Cube) {
             (
                 PbrBundle {
                     mesh: meshes.add(Cuboid::new(hdim_xyz.0,hdim_xyz.1,hdim_xyz.2)),
@@ -101,7 +105,8 @@ fn spawn_objects(
                 
                 Name::new(name),
                 Collider::cuboid(hdim_xyz.0/2.0, hdim_xyz.1/2.0, hdim_xyz.2/2.0),
-                RigidBody::Fixed
+                RigidBody::KinematicPositionBased,
+                Cube
             )
         };
     commands.spawn(create_cube(
@@ -119,3 +124,4 @@ fn spawn_objects(
     ));
 
 }
+

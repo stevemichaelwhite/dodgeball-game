@@ -1,12 +1,12 @@
 use bevy::prelude::*;
-use rand::Rng;
+// use rand::Rng;
 use bevy_rapier3d::prelude::*;
 use bevy_third_person_camera::*;
 
 const GROUND_TIMER: f32 = 0.5;
 const MOVEMENT_SPEED: f32 = 8.0;
-const JUMP_SPEED: f32 = 1.2;
-const GRAVITY: f32 = -9.81/3.0;
+const JUMP_SPEED: f32 = 0.8;
+const GRAVITY: f32 = -9.81/4.0;
 const TERMINAL_VELOCITY: f32 = -54.0/3.0;
 
 pub struct PlayerPlugin;

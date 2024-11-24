@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
+use std::f64::consts::TAU;
 
 pub use bevy_third_person_camera::ThirdPersonCameraPlugin;
 
@@ -15,6 +16,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 fn main() {
     App::new()
+        // .insert_resource(Time::<Fixed>::from_seconds(0.25))
         .add_plugins((
             DefaultPlugins,
             PlayerPlugin,
@@ -26,6 +28,8 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_systems(Startup, setup_physics)
+        .add_systems(FixedUpdate, move_cubes)
+        
         // .add_systems(Update, print_ball_altitude)
         .run();
 }
@@ -49,10 +53,13 @@ fn setup_physics(mut commands: Commands) {
         });
 }
 
-// fn print_ball_altitude(mut positions: Query<&mut Transform, With<RigidBody>>) {
-//     for mut transform in positions.iter_mut() {
-//         dbg!(transform.rotation.to_axis_angle());
-//         transform.rotation = Quat::from_rotation_z(270_f32.to_radians());
-//         //println!("Ball altitude: {}", transform.translation.y);
-//     }
-// }
+
+fn move_cubes(time: Res<Time>, mut cube_q: Query< &mut Transform,(With<RigidBody>, With<world::Cube>)>) {
+    cube_q.iter_mut().for_each(|mut transfrom| {
+        let oscillator = (time.elapsed_seconds()%(TAU as f32)).sin();
+        transfrom.translation.y += oscillator/6.0;
+        println!("Sine seconds: {}", oscillator);
+    });
+    
+}
+
