@@ -150,7 +150,7 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
         Player,
         ThirdPersonCameraTarget,
         Name::new("Player"),
-        Collider::capsule_y(0.6, 0.3),
+        Collider::cone(0.8, 0.3),
         // RigidBody::Dynamic,
         // RigidBody::KinematicPositionBased,
         KinematicCharacterController {

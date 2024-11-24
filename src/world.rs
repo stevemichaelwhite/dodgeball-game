@@ -85,10 +85,10 @@ fn spawn_objects(
 
 
     let mut create_cube =
-        |depth: f32, color_hex: String, xyz: (f32, f32, f32), name: String| -> (PbrBundle, Name) {
+        |hdim_xyz: (f32, f32, f32), color_hex: String, xyz: (f32, f32, f32), name: String| -> (PbrBundle, Name, Collider, RigidBody) {
             (
                 PbrBundle {
-                    mesh: meshes.add(Extrusion::new(Rectangle::default(), depth)),
+                    mesh: meshes.add(Cuboid::new(hdim_xyz.0,hdim_xyz.1,hdim_xyz.2)),
                     material: materials.add(StandardMaterial {
                         base_color: Srgba::hex(color_hex).unwrap().into(),
                         metallic: 0.620,
@@ -98,20 +98,23 @@ fn spawn_objects(
                     transform: Transform::from_xyz(xyz.0, xyz.1, xyz.2),
                     ..default()
                 },
+                
                 Name::new(name),
+                Collider::cuboid(hdim_xyz.0/2.0, hdim_xyz.1/2.0, hdim_xyz.2/2.0),
+                RigidBody::Fixed
             )
         };
     commands.spawn(create_cube(
-        4.0,
+        (2.0, 2.0, 2.0),
         "#1a1fad".to_string(),
-        (1.7, 0.5, 0.0),
+        (1.7, 1.0, 0.0),
         "BlueCube".to_string(),
     ));
 
     commands.spawn(create_cube(
-        2.0,
+        (2.0, 2.0, 2.0),
         "#ad1a30".to_string(),
-        (-3.3, 0.5, 3.5),
+        (-3.3, 1.0, 3.5),
         "RedCube".to_string(),
     ));
 
