@@ -8,11 +8,10 @@ mod camera;
 mod player;
 mod world;
 
-
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use camera::CameraPlugin;
 use player::PlayerPlugin;
 use world::WorldPlugin;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 fn main() {
     App::new()
@@ -27,39 +26,44 @@ fn main() {
         ))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(RapierDebugRenderPlugin::default())
-        .add_systems(Startup, setup_physics)
+        .add_systems(Startup, (setup_floor, spawn_ball))
         .add_systems(FixedUpdate, move_cubes)
-        
         // .add_systems(Update, print_ball_altitude)
         .run();
 }
 
-fn setup_physics(mut commands: Commands) {
+fn setup_floor(mut commands: Commands) {
     /* Create the ground. */
     commands
         .spawn(Collider::cuboid(100.0, 0.1, 100.0))
         .insert(TransformBundle::from(Transform::from_xyz(0.0, -2.0, 0.0)));
+}
 
+fn spawn_ball(mut commands: Commands) {
     /* Create the bouncing ball. */
     commands
         .spawn(RigidBody::Dynamic)
         .insert(Collider::ball(0.5))
         // .insert(AdditionalMassProperties::Mass(0.2))
         .insert(Restitution::coefficient(0.9))
-        .insert(TransformBundle::from(Transform::from_xyz(0.0, 4.0, 0.0)))
+        .insert(TransformBundle::from(Transform::from_xyz(-4.0, 1.0, 0.0)))
         .insert(Friction {
             coefficient: 0.00,
             combine_rule: CoefficientCombineRule::Min,
+        })
+        .insert(Velocity {
+            linvel: Vec3::new(30.0, 1.0, 0.0),
+            angvel: Vec3::new(0.2, 0.4, 0.8),
         });
 }
 
-
-fn move_cubes(time: Res<Time>, mut cube_q: Query< &mut Transform,(With<RigidBody>, With<world::Cube>)>) {
+fn move_cubes(
+    time: Res<Time>,
+    mut cube_q: Query<&mut Transform, (With<RigidBody>, With<world::Cube>)>,
+) {
     cube_q.iter_mut().for_each(|mut transfrom| {
-        let oscillator = (time.elapsed_seconds()%(TAU as f32)).sin();
-        transfrom.translation.y += oscillator/6.0;
-        println!("Sine seconds: {}", oscillator);
+        let oscillator = (time.elapsed_seconds() % (TAU as f32)).sin();
+        transfrom.translation.y += oscillator / 6.0;
+        // println!("Sine seconds: {}", oscillator);
     });
-    
 }
-

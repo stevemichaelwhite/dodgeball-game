@@ -169,7 +169,7 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
             // Automatically slide down on slopes smaller than 30 degrees.
             min_slope_slide_angle: 30.0_f32.to_radians(),
             apply_impulse_to_dynamic_bodies: true,
-            // snap_to_ground: Some(CharacterLength::Absolute(0.5)),
+            snap_to_ground: Some(CharacterLength::Absolute(0.5)),
             // snap_to_ground: None,
             ..default()
         },
