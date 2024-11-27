@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 use std::f64::consts::TAU;
+use std::time::Duration;
 
 pub struct WorldPlugin;
 
@@ -15,9 +16,10 @@ impl Plugin for WorldPlugin {
                 spawn_objects,
                 setup_floor,
                 spawn_ball,
+                setup_ball_spawning,
             ),
         )
-        .add_systems(FixedUpdate, move_cubes);
+        .add_systems(Update, (move_cubes, despawn_ball));
     }
 }
 
@@ -140,6 +142,10 @@ fn spawn_ball(mut commands: Commands) {
     /* Create the bouncing ball. */
     commands
         .spawn(RigidBody::Dynamic)
+        .insert(BallLifetime {
+                timer: Timer::new(Duration::from_secs(5), TimerMode::Repeating)
+            })
+        // .insert(BallLifetime{Duration::from_secs(10)})
         .insert(Collider::ball(0.5))
         // .insert(AdditionalMassProperties::Mass(0.2))
         .insert(Restitution::coefficient(0.9))
@@ -154,6 +160,22 @@ fn spawn_ball(mut commands: Commands) {
         });
 }
 
+fn despawn_ball(
+    mut commands: Commands,
+    mut q: Query<(Entity, &mut BallLifetime)>,
+    time: Res<Time>,
+) {
+    for (entity, mut fuse_timer) in q.iter_mut() {
+        // timers gotta be ticked, to work
+        fuse_timer.timer.tick(time.delta());
+
+        // if it finished, despawn the bomb
+        if fuse_timer.timer.finished() {
+            commands.entity(entity).despawn();
+        }
+    }
+}
+
 fn move_cubes(
     time: Res<Time>,
     mut cube_q: Query<&mut Transform, (With<RigidBody>, With<Cube>)>,
@@ -163,4 +185,25 @@ fn move_cubes(
         transfrom.translation.y += oscillator / 6.0;
         // println!("Sine seconds: {}", oscillator);
     });
+}
+
+#[derive(Resource)]
+struct BallSpawnConfig {
+    /// How often to spawn a new bomb? (repeating timer)
+    timer: Timer,
+}
+
+fn setup_ball_spawning(
+    mut commands: Commands,
+) {
+    commands.insert_resource(BallSpawnConfig {
+        // create the repeating timer
+        timer: Timer::new(Duration::from_secs(10), TimerMode::Repeating),
+    })
+}
+
+#[derive(Component)]
+struct BallLifetime {
+    /// track when the bomb should explode (non-repeating timer)
+    timer: Timer,
 }
