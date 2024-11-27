@@ -15,11 +15,11 @@ impl Plugin for WorldPlugin {
                 spawn_floor,
                 spawn_objects,
                 setup_floor,
-                spawn_ball,
+                // spawn_ball,
                 setup_ball_spawning,
             ),
         )
-        .add_systems(Update, (move_cubes, despawn_ball));
+        .add_systems(Update, (move_cubes, spawn_ball, despawn_ball));
     }
 }
 
@@ -65,7 +65,12 @@ fn spawn_floor(
     let ground_height = 0.1;
     let floor = (
         PbrBundle {
-            mesh: meshes.add(Plane3d::default().mesh().size(ground_size, ground_size).subdivisions(10)),
+            mesh: meshes.add(
+                Plane3d::default()
+                    .mesh()
+                    .size(ground_size, ground_size)
+                    .subdivisions(10),
+            ),
             // mesh: meshes.add(Mesh::from(shape::Plane::from_size(15.0))),
             material: materials.add(StandardMaterial {
                 base_color: Srgba::hex("#21ad1a").unwrap().into(),
@@ -76,45 +81,43 @@ fn spawn_floor(
             ..default()
         },
         Name::new("Floor"),
-        Collider::cuboid(ground_size/2.0, ground_height, ground_size/2.0),
+        Collider::cuboid(ground_size / 2.0, ground_height, ground_size / 2.0),
         // RigidBody::Fixed,
     );
     commands.spawn(floor);
-    
 }
 
 #[derive(Component)]
 pub struct Cube;
-
 
 fn spawn_objects(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-
-
-    let mut create_cube =
-        |hdim_xyz: (f32, f32, f32), color_hex: String, xyz: (f32, f32, f32), name: String| -> (PbrBundle, Name, Collider, RigidBody, Cube) {
-            (
-                PbrBundle {
-                    mesh: meshes.add(Cuboid::new(hdim_xyz.0,hdim_xyz.1,hdim_xyz.2)),
-                    material: materials.add(StandardMaterial {
-                        base_color: Srgba::hex(color_hex).unwrap().into(),
-                        metallic: 0.620,
-                        perceptual_roughness: 0.8,
-                        ..default()
-                    }),
-                    transform: Transform::from_xyz(xyz.0, xyz.1, xyz.2),
+    let mut create_cube = |hdim_xyz: (f32, f32, f32),
+                           color_hex: String,
+                           xyz: (f32, f32, f32),
+                           name: String|
+     -> (PbrBundle, Name, Collider, RigidBody, Cube) {
+        (
+            PbrBundle {
+                mesh: meshes.add(Cuboid::new(hdim_xyz.0, hdim_xyz.1, hdim_xyz.2)),
+                material: materials.add(StandardMaterial {
+                    base_color: Srgba::hex(color_hex).unwrap().into(),
+                    metallic: 0.620,
+                    perceptual_roughness: 0.8,
                     ..default()
-                },
-                
-                Name::new(name),
-                Collider::cuboid(hdim_xyz.0/2.0, hdim_xyz.1/2.0, hdim_xyz.2/2.0),
-                RigidBody::KinematicPositionBased,
-                Cube
-            )
-        };
+                }),
+                transform: Transform::from_xyz(xyz.0, xyz.1, xyz.2),
+                ..default()
+            },
+            Name::new(name),
+            Collider::cuboid(hdim_xyz.0 / 2.0, hdim_xyz.1 / 2.0, hdim_xyz.2 / 2.0),
+            RigidBody::KinematicPositionBased,
+            Cube,
+        )
+    };
     commands.spawn(create_cube(
         (2.0, 2.0, 2.0),
         "#1a1fad".to_string(),
@@ -128,7 +131,6 @@ fn spawn_objects(
         (-3.3, 1.0, 3.5),
         "RedCube".to_string(),
     ));
-
 }
 
 fn setup_floor(mut commands: Commands) {
@@ -138,26 +140,28 @@ fn setup_floor(mut commands: Commands) {
         .insert(TransformBundle::from(Transform::from_xyz(0.0, -2.0, 0.0)));
 }
 
-fn spawn_ball(mut commands: Commands) {
-    /* Create the bouncing ball. */
-    commands
-        .spawn(RigidBody::Dynamic)
-        .insert(BallLifetime {
-                timer: Timer::new(Duration::from_secs(5), TimerMode::Repeating)
+fn spawn_ball(mut commands: Commands, time: Res<Time>, mut config: ResMut<BallSpawnConfig>) {
+    config.timer.tick(time.delta());
+    if config.timer.finished() {
+        commands
+            .spawn(RigidBody::Dynamic)
+            .insert(BallLifetime {
+                timer: Timer::new(Duration::from_secs(5), TimerMode::Repeating),
             })
-        // .insert(BallLifetime{Duration::from_secs(10)})
-        .insert(Collider::ball(0.5))
-        // .insert(AdditionalMassProperties::Mass(0.2))
-        .insert(Restitution::coefficient(0.9))
-        .insert(TransformBundle::from(Transform::from_xyz(-4.0, 1.0, 0.0)))
-        .insert(Friction {
-            coefficient: 0.00,
-            combine_rule: CoefficientCombineRule::Min,
-        })
-        .insert(Velocity {
-            linvel: Vec3::new(30.0, 1.0, 0.0),
-            angvel: Vec3::new(0.2, 0.4, 0.8),
-        });
+            // .insert(BallLifetime{Duration::from_secs(10)})
+            .insert(Collider::ball(0.5))
+            // .insert(AdditionalMassProperties::Mass(0.2))
+            .insert(Restitution::coefficient(0.9))
+            .insert(TransformBundle::from(Transform::from_xyz(-4.0, 1.0, 0.0)))
+            .insert(Friction {
+                coefficient: 0.00,
+                combine_rule: CoefficientCombineRule::Min,
+            })
+            .insert(Velocity {
+                linvel: Vec3::new(30.0, 1.0, 0.0),
+                angvel: Vec3::new(0.2, 0.4, 0.8),
+            });
+    }
 }
 
 fn despawn_ball(
@@ -176,10 +180,7 @@ fn despawn_ball(
     }
 }
 
-fn move_cubes(
-    time: Res<Time>,
-    mut cube_q: Query<&mut Transform, (With<RigidBody>, With<Cube>)>,
-) {
+fn move_cubes(time: Res<Time>, mut cube_q: Query<&mut Transform, (With<RigidBody>, With<Cube>)>) {
     cube_q.iter_mut().for_each(|mut transfrom| {
         let oscillator = (time.elapsed_seconds() % (TAU as f32)).sin();
         transfrom.translation.y += oscillator / 6.0;
@@ -193,12 +194,10 @@ struct BallSpawnConfig {
     timer: Timer,
 }
 
-fn setup_ball_spawning(
-    mut commands: Commands,
-) {
+fn setup_ball_spawning(mut commands: Commands) {
     commands.insert_resource(BallSpawnConfig {
         // create the repeating timer
-        timer: Timer::new(Duration::from_secs(10), TimerMode::Repeating),
+        timer: Timer::new(Duration::from_secs(3), TimerMode::Repeating),
     })
 }
 
