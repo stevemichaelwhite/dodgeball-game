@@ -145,12 +145,13 @@ fn spawn_ball(mut commands: Commands, time: Res<Time>, mut config: ResMut<BallSp
     if config.timer.finished() {
         commands
             .spawn(RigidBody::Dynamic)
+            .insert(Ball)
             .insert(BallLifetime {
                 timer: Timer::new(Duration::from_secs(5), TimerMode::Repeating),
             })
-            // .insert(BallLifetime{Duration::from_secs(10)})
+            .insert(ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_STATIC)
             .insert(Collider::ball(0.5))
-            // .insert(AdditionalMassProperties::Mass(0.2))
+            .insert(AdditionalMassProperties::Mass(10.2))
             .insert(Restitution::coefficient(0.9))
             .insert(TransformBundle::from(Transform::from_xyz(-4.0, 1.0, 0.0)))
             .insert(Friction {
@@ -206,3 +207,6 @@ struct BallLifetime {
     /// track when the bomb should explode (non-repeating timer)
     timer: Timer,
 }
+
+#[derive(Component)]
+pub struct Ball;

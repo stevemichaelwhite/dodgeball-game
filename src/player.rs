@@ -2,6 +2,8 @@ use bevy::prelude::*;
 // use rand::Rng;
 use bevy_rapier3d::prelude::*;
 use bevy_third_person_camera::*;
+use crate::world::Ball;
+
 
 const GROUND_TIMER: f32 = 0.5;
 const MOVEMENT_SPEED: f32 = 8.0;
@@ -16,7 +18,7 @@ impl Plugin for PlayerPlugin {
         app
             .add_systems(Startup, spawn_player)
             .add_systems(FixedUpdate, player_movement)
-            // .add_systems(Update, read_result_system)
+            .add_systems(Update, read_character_controller_collisions)
             ;
     }
 }
@@ -188,3 +190,21 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
 //         );
 //     }
 // }
+
+fn read_character_controller_collisions(
+    mut character_controller_outputs: Query<&mut KinematicCharacterControllerOutput>,
+    ball_q: Query<Entity, With<Ball>>
+) {
+    for ball_entity in ball_q.iter(){
+        // println!("ball_entity: {ball_entity}");
+        for output in character_controller_outputs.iter_mut() {
+            for collision in &output.collisions {
+                if ball_entity == collision.entity {
+                    println!("entity: {}", collision.entity);
+                }
+                
+            }
+        }
+    }
+    
+}

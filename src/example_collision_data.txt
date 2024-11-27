@@ -1,0 +1,22 @@
+CharacterCollision { entity: Entity { index: 9, generation: 1
+    }, character_translation: Vec3(0.00011640011,
+    0.63778156,
+    -4.139827e-7), character_rotation: Quat(0.0,
+    0.0,
+    0.0,
+    1.0), translation_applied: Vec3(0.0,
+    0.0,
+    0.0), translation_remaining: Vec3(0.0,
+    -0.038320314,
+    0.0), hit: ShapeCastHit { time_of_impact: 0.0, details: Some(ShapeCastHitDetails { witness1: Vec3(-0.13686943,
+            0.099999994,
+            -0.13965416), witness2: Vec3(-0.13698597,
+            -0.8,
+            -0.13965337), normal1: Vec3(0.0,
+            1.0,
+            0.0), normal2: Vec3(0.0,
+            -1.0,
+            0.0)
+        }), status: PenetratingOrWithinTargetDist
+    }
+}
