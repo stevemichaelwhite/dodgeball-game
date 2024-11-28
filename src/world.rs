@@ -155,7 +155,7 @@ fn spawn_ball(mut commands: Commands, time: Res<Time>, mut config: ResMut<BallSp
             .insert(Restitution::coefficient(0.9))
             .insert(TransformBundle::from(Transform::from_xyz(-4.0, 1.0, 0.0)))
             .insert(Friction {
-                coefficient: 0.00,
+                coefficient: 3.00,
                 combine_rule: CoefficientCombineRule::Min,
             })
             .insert(Velocity {
