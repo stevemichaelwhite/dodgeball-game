@@ -1,31 +1,33 @@
 use bevy::prelude::*;
 // use rand::Rng;
+use crate::world::Ball;
 use bevy_rapier3d::prelude::*;
 use bevy_third_person_camera::*;
-use crate::world::Ball;
-
 
 const GROUND_TIMER: f32 = 0.5;
 const MOVEMENT_SPEED: f32 = 8.0;
 const JUMP_SPEED: f32 = 0.8;
-const GRAVITY: f32 = -9.81/4.0;
-const TERMINAL_VELOCITY: f32 = -54.0/3.0;
+const GRAVITY: f32 = -9.81 / 4.0;
+const TERMINAL_VELOCITY: f32 = -54.0 / 3.0;
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems(Startup, spawn_player)
+        app.add_systems(Startup, spawn_player)
             .add_systems(FixedUpdate, player_movement)
-            .add_systems(Update, read_character_controller_collisions)
-            ;
+            .add_systems(Update, (read_character_controller_collisions, debug_player_hit));
     }
 }
 
 #[derive(Component)]
 struct Player;
 
+#[derive(Component, Debug)]
+struct HitStatus {
+    is_hit: bool,
+    normal1_of_hit: Option<Vec3>,
+}
 
 fn player_movement(
     keys: Res<ButtonInput<KeyCode>>,
@@ -42,87 +44,76 @@ fn player_movement(
     cam_q: Query<&Transform, (With<Camera3d>, Without<Player>)>,
     mut vertical_movement: Local<f32>,
     mut grounded_timer: Local<f32>,
-
 ) {
-
-    
     let (mut player_transform, mut controller, output) = player_q.single_mut();
 
+    let cam = match cam_q.get_single() {
+        Ok(c) => c,
+        Err(e) => Err(format!("Error retrieving camera: {}", e)).unwrap(),
+    };
 
-        let cam = match cam_q.get_single() {
-            Ok(c) => c,
-            Err(e) => Err(format!("Error retrieving camera: {}", e)).unwrap(),
-        };
+    let mut jump_direction = 0.0;
 
-        let mut jump_direction =0.0;
+    let mut direction = Vec3::ZERO;
+    // We need to remove the y component out of these
+    if keys.pressed(KeyCode::KeyW) {
+        direction += (*cam.forward()).with_y(0.0);
+    }
 
-        let mut direction = Vec3::ZERO;
-        // We need to remove the y component out of these
-        if keys.pressed(KeyCode::KeyW) {
-            direction += (*cam.forward()).with_y(0.0);
+    if keys.pressed(KeyCode::KeyS) {
+        direction += (*cam.back()).with_y(0.0);
+    }
+
+    if keys.pressed(KeyCode::KeyA) {
+        direction += (*cam.left()).with_y(0.0);
+    }
+
+    if keys.pressed(KeyCode::KeyD) {
+        direction += (*cam.right()).with_y(0.0);
+    }
+    if keys.pressed(KeyCode::KeyE) {
+        jump_direction = 1.0;
+    }
+
+    let delta_time = time.delta_seconds();
+    let jump_speed = jump_direction * JUMP_SPEED;
+
+    let is_grounded = output.map(|o| o.grounded).unwrap_or(false);
+    if is_grounded {
+        *grounded_timer = GROUND_TIMER;
+        *vertical_movement = 0.0;
+    }
+
+    // If we are grounded we can jump
+    if *grounded_timer > 0.0 {
+        *grounded_timer -= delta_time;
+        // If we jump we clear the grounded tolerance
+        if jump_speed > 0.0 {
+            *vertical_movement = jump_speed;
+            *grounded_timer = 0.0;
         }
+    }
 
-        if keys.pressed(KeyCode::KeyS) {
-            direction += (*cam.back()).with_y(0.0);
-        }
+    // direction.y = 0.0;
+    let mut movement = direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
+    *vertical_movement += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
+    *vertical_movement = (*vertical_movement).max(TERMINAL_VELOCITY);
+    // let mut rng = rand::thread_rng();
 
-        if keys.pressed(KeyCode::KeyA) {
-            direction += (*cam.left()).with_y(0.0);
-        }
+    // let jitter_vertical: f32 = rng.gen_range(-0.09..=0.09);
+    // *vertical_movement += jitter_vertical;
 
-        if keys.pressed(KeyCode::KeyD) {
-            direction += (*cam.right()).with_y(0.0);
-        }
-        if keys.pressed(KeyCode::KeyE) {
-            jump_direction = 1.0;
-        } 
+    movement.y = *vertical_movement;
+    // movement.y = jump_speed;
 
+    controller.translation = Some(movement);
+    // controller.translation = Some(Vec3::new(0.0,*vertical_movement, 0.0));
+    // player_transform.translation += movement;
 
-        
-        let delta_time = time.delta_seconds();
-        let jump_speed = jump_direction * JUMP_SPEED;
-        
-
-        let is_grounded = output.map(|o| o.grounded).unwrap_or(false);
-        if is_grounded {
-            *grounded_timer = GROUND_TIMER;
-            *vertical_movement = 0.0;
-        } 
-
-        // If we are grounded we can jump
-        if *grounded_timer > 0.0 {
-            *grounded_timer -= delta_time;
-            // If we jump we clear the grounded tolerance
-            if jump_speed > 0.0 {
-                *vertical_movement = jump_speed;
-                *grounded_timer = 0.0;
-            }
-        }
-
-        
-
-        // direction.y = 0.0;
-        let mut movement =  direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
-        *vertical_movement += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
-        *vertical_movement = (*vertical_movement).max(TERMINAL_VELOCITY);
-        // let mut rng = rand::thread_rng();
-
-        // let jitter_vertical: f32 = rng.gen_range(-0.09..=0.09);
-        // *vertical_movement += jitter_vertical;
-
-        movement.y = *vertical_movement;
-        // movement.y = jump_speed;
-        
-        
-        controller.translation = Some(movement);
-        // controller.translation = Some(Vec3::new(0.0,*vertical_movement, 0.0));
-        // player_transform.translation += movement;
-
-        //
-        if direction.length_squared() > 0.0 {
-            player_transform.look_to(direction, Vec3::Y)
-        }
-    
+    //
+    if direction.length_squared() > 0.0 {
+        player_transform.look_to(direction, Vec3::Y)
+    }
 }
 
 fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
@@ -175,11 +166,18 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
             // snap_to_ground: None,
             ..default()
         },
-        
+        HitStatus {is_hit: false, normal1_of_hit: None}
     );
-    commands.spawn(player).insert(LockedAxes::TRANSLATION_LOCKED | LockedAxes::ROTATION_LOCKED).with_children(|parent| {
-        parent.spawn(flashlight);
-    });
+    commands
+        .spawn(player)
+        .insert(LockedAxes::TRANSLATION_LOCKED | LockedAxes::ROTATION_LOCKED)
+        .insert(ExternalImpulse {
+            impulse: Vec3::new(50.0, 0.0, 25.0),
+            torque_impulse: Vec3::new(0.0, 0.0, 0.0),
+        })
+        .with_children(|parent| {
+            parent.spawn(flashlight);
+        });
 }
 
 // fn read_result_system(controllers: Query<(&KinematicCharacterControllerOutput)>) {
@@ -192,19 +190,41 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
 // }
 
 fn read_character_controller_collisions(
-    mut character_controller_outputs: Query<&mut KinematicCharacterControllerOutput>,
-    ball_q: Query<Entity, With<Ball>>
+    mut character_controller_outputs: Query<
+        (&mut KinematicCharacterControllerOutput, &mut HitStatus)>,
+    ball_q: Query<Entity, With<Ball>>,
 ) {
-    for ball_entity in ball_q.iter(){
+    for ball_entity in ball_q.iter() {
         // println!("ball_entity: {ball_entity}");
-        for output in character_controller_outputs.iter_mut() {
+        for (output, mut hit_status) in character_controller_outputs.iter_mut() {
             for collision in &output.collisions {
                 if ball_entity == collision.entity {
-                    println!("entity: {}", collision.entity);
+                    
+                    // let hit = collision.hit.details
+                    if let Some(hit_details) = collision.hit.details {
+                        println!("hit details: {:?}", hit_details);
+                        *hit_status = HitStatus{is_hit:true, normal1_of_hit: Some(hit_details.normal1)};
+                    }
+                    
+                    // we need to flip was_hit to true and save the normal, and the mass of the object
+                    // body.apply(value);
                 }
-                
             }
         }
     }
-    
+}
+
+fn debug_player_hit(
+    mut query: Query<
+        (&HitStatus,
+        &mut KinematicCharacterController),
+        (With<Player>, Changed<HitStatus>)>,
+) {
+    for (hit_status, mut controller) in query.iter_mut() {
+        eprintln!(
+            "hit_status: {:?}",
+            hit_status
+        );
+        controller.translation = hit_status.normal1_of_hit;
+    }
 }
