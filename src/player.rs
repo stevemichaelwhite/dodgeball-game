@@ -15,8 +15,9 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_player)
-            .add_systems(FixedUpdate, player_movement)
-            .add_systems(Update, (read_character_controller_collisions, debug_player_hit));
+            // .add_systems(FixedUpdate, player_movement)
+            // .add_systems(Update, (read_character_controller_collisions, debug_player_hit))
+            ;
     }
 }
 
@@ -137,44 +138,44 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
     let player = (
         SceneBundle {
             scene: assets.load("Player.gltf#Scene0"),
-            transform: Transform::from_xyz(0.0, 0.8, 0.0),
+            transform: Transform::from_xyz(0.0, 1.8, 0.0),
             ..default()
         },
         Player,
         ThirdPersonCameraTarget,
         Name::new("Player"),
         Collider::cone(0.8, 0.3),
-        // RigidBody::Dynamic,
+        RigidBody::Dynamic,
         // RigidBody::KinematicPositionBased,
-        KinematicCharacterController {
-            // ..KinematicCharacterController::default()
-            custom_mass: Some(1.0),
-            up: Vec3::Y,
-            offset: CharacterLength::Absolute(0.03),
-            slide: true,
-            autostep: Some(CharacterAutostep {
-                max_height: CharacterLength::Relative(0.3),
-                min_width: CharacterLength::Relative(0.5),
-                include_dynamic_bodies: false,
-            }),
-            // Don’t allow climbing slopes larger than 45 degrees.
-            max_slope_climb_angle: 45.0_f32.to_radians(),
-            // Automatically slide down on slopes smaller than 30 degrees.
-            min_slope_slide_angle: 30.0_f32.to_radians(),
-            apply_impulse_to_dynamic_bodies: true,
-            snap_to_ground: Some(CharacterLength::Absolute(0.5)),
-            // snap_to_ground: None,
-            ..default()
-        },
+        // KinematicCharacterController {
+        //     // ..KinematicCharacterController::default()
+        //     custom_mass: Some(1.0),
+        //     up: Vec3::Y,
+        //     offset: CharacterLength::Absolute(0.03),
+        //     slide: true,
+        //     autostep: Some(CharacterAutostep {
+        //         max_height: CharacterLength::Relative(0.3),
+        //         min_width: CharacterLength::Relative(0.5),
+        //         include_dynamic_bodies: false,
+        //     }),
+        //     // Don’t allow climbing slopes larger than 45 degrees.
+        //     max_slope_climb_angle: 45.0_f32.to_radians(),
+        //     // Automatically slide down on slopes smaller than 30 degrees.
+        //     min_slope_slide_angle: 30.0_f32.to_radians(),
+        //     apply_impulse_to_dynamic_bodies: true,
+        //     snap_to_ground: Some(CharacterLength::Absolute(0.5)),
+        //     // snap_to_ground: None,
+        //     ..default()
+        // },
         HitStatus {is_hit: false, normal1_of_hit: None}
     );
     commands
         .spawn(player)
-        .insert(LockedAxes::TRANSLATION_LOCKED | LockedAxes::ROTATION_LOCKED)
-        .insert(ExternalImpulse {
-            impulse: Vec3::new(50.0, 0.0, 25.0),
-            torque_impulse: Vec3::new(0.0, 0.0, 0.0),
-        })
+        .insert(LockedAxes::ROTATION_LOCKED)
+        // .insert(ExternalImpulse {
+        //     impulse: Vec3::new(50.0, 0.0, 25.0),
+        //     torque_impulse: Vec3::new(0.0, 0.0, 0.0),
+        // })
         .with_children(|parent| {
             parent.spawn(flashlight);
         });
@@ -189,42 +190,42 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
 //     }
 // }
 
-fn read_character_controller_collisions(
-    mut character_controller_outputs: Query<
-        (&mut KinematicCharacterControllerOutput, &mut HitStatus)>,
-    ball_q: Query<Entity, With<Ball>>,
-) {
-    for ball_entity in ball_q.iter() {
-        // println!("ball_entity: {ball_entity}");
-        for (output, mut hit_status) in character_controller_outputs.iter_mut() {
-            for collision in &output.collisions {
-                if ball_entity == collision.entity {
+// fn read_character_controller_collisions(
+//     mut character_controller_outputs: Query<
+//         (&mut KinematicCharacterControllerOutput, &mut HitStatus)>,
+//     ball_q: Query<Entity, With<Ball>>,
+// ) {
+//     for ball_entity in ball_q.iter() {
+//         // println!("ball_entity: {ball_entity}");
+//         for (output, mut hit_status) in character_controller_outputs.iter_mut() {
+//             for collision in &output.collisions {
+//                 if ball_entity == collision.entity {
                     
-                    // let hit = collision.hit.details
-                    if let Some(hit_details) = collision.hit.details {
-                        println!("hit details: {:?}", hit_details);
-                        *hit_status = HitStatus{is_hit:true, normal1_of_hit: Some(hit_details.normal1)};
-                    }
+//                     // let hit = collision.hit.details
+//                     if let Some(hit_details) = collision.hit.details {
+//                         println!("hit details: {:?}", hit_details);
+//                         *hit_status = HitStatus{is_hit:true, normal1_of_hit: Some(hit_details.normal1)};
+//                     }
                     
-                    // we need to flip was_hit to true and save the normal, and the mass of the object
-                    // body.apply(value);
-                }
-            }
-        }
-    }
-}
+//                     // we need to flip was_hit to true and save the normal, and the mass of the object
+//                     // body.apply(value);
+//                 }
+//             }
+//         }
+//     }
+// }
 
-fn debug_player_hit(
-    mut query: Query<
-        (&HitStatus,
-        &mut KinematicCharacterController),
-        (With<Player>, Changed<HitStatus>)>,
-) {
-    for (hit_status, mut controller) in query.iter_mut() {
-        eprintln!(
-            "hit_status: {:?}",
-            hit_status
-        );
-        controller.translation = hit_status.normal1_of_hit;
-    }
-}
+// fn debug_player_hit(
+//     mut query: Query<
+//         (&HitStatus,
+//         &mut KinematicCharacterController),
+//         (With<Player>, Changed<HitStatus>)>,
+// ) {
+//     for (hit_status, mut controller) in query.iter_mut() {
+//         eprintln!(
+//             "hit_status: {:?}",
+//             hit_status
+//         );
+//         controller.translation = hit_status.normal1_of_hit;
+//     }
+// }

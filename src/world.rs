@@ -151,7 +151,8 @@ fn spawn_ball(mut commands: Commands, time: Res<Time>, mut config: ResMut<BallSp
             })
             .insert(ActiveCollisionTypes::default() | ActiveCollisionTypes::KINEMATIC_STATIC)
             .insert(Collider::ball(0.5))
-            .insert(AdditionalMassProperties::Mass(10.2))
+            .insert(AdditionalMassProperties::Mass(1000.2))
+            .insert(ColliderMassProperties::Density(1000.0))
             .insert(Restitution::coefficient(0.9))
             .insert(TransformBundle::from(Transform::from_xyz(-4.0, 1.0, 0.0)))
             .insert(Friction {
