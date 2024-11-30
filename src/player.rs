@@ -2,10 +2,8 @@ use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 use bevy_third_person_camera::*;
 
-
 const MOVEMENT_SPEED: f32 = 8.0;
 const JUMP_SPEED: f32 = 10.8;
-
 
 pub struct PlayerPlugin;
 
@@ -20,21 +18,14 @@ impl Plugin for PlayerPlugin {
 
 #[derive(Component)]
 struct Player;
-
+#[derive(Component)]
+struct Grounded(bool);
 
 fn player_movement(
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut player_q: Query<
-        (
-            &mut Transform,
-            &mut Velocity,
-        )
-        ,
-        With<Player>,
-    >,
+    mut player_q: Query<(&mut Transform, &mut Velocity), With<Player>>,
     cam_q: Query<&Transform, (With<Camera3d>, Without<Player>)>,
-
 ) {
     // let (mut player_transform, mut _controller, _output) = player_q.single_mut();
     let (mut player_transform, mut player_velocity) = player_q.single_mut();
@@ -90,7 +81,6 @@ fn player_movement(
     // direction.y = 0.0;
     let movement = direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
 
-
     player_transform.translation += movement;
 
     if direction.length_squared() > 0.0 {
@@ -127,6 +117,7 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
         Name::new("Player"),
         Collider::cone(0.8, 0.3),
         RigidBody::Dynamic,
+        Grounded(false),
         // HitStatus {is_hit: false, normal1_of_hit: None}
     );
     commands
@@ -139,71 +130,41 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
         .insert(AdditionalMassProperties::Mass(20.0))
         .insert(LockedAxes::ROTATION_LOCKED)
         .insert(ActiveEvents::COLLISION_EVENTS)
-
         .with_children(|parent| {
             parent.spawn(flashlight);
         });
 }
 
-
 fn display_events(
     mut collision_events: EventReader<CollisionEvent>,
-    mut contact_force_events: EventReader<ContactForceEvent>,
+    rapier_context: Res<RapierContext>,
+
+    mut player_q: Query<(Entity, &Collider, &mut Grounded), With<Player>>,
 ) {
+    let (player_id, _player_collider, mut _player_grounded) = player_q.single_mut();
     for collision_event in collision_events.read() {
-        println!("Received collision event: {:?}", collision_event);
+        // let entity1 = collision_event.0;
+        match collision_event {
+            CollisionEvent::Started(entity1, entity2, _flags) => {
+                println!("Collision started between {:?} and {:?}", entity1, entity2);
+                // rapier_context.collider_entity(entity1);
+                println!("player_id is entity 1: {}", player_id == *entity1);
+                println!("player_id is entity 2: {}", player_id == *entity2);
+            }
+            CollisionEvent::Stopped(entity1, entity2, _flags) => {
+                println!("Collision stopped between {:?} and {:?}", entity1, entity2);
+                // println!("player_id: {player_id:?}");
+            }
+        }
     }
 
-    for contact_force_event in contact_force_events.read() {
-        println!("Received contact force event: {:?}", contact_force_event);
-    }
+    // println!("Received collision event: {:?}", collision_event);
+    
+    // println!("player_collider: {player_collider:?}");
+    // if collision with ground started then player is grounded
+    // if collsions with ground stopped then player is not grouunded
 }
 
-// fn read_result_system(controllers: Query<(&KinematicCharacterControllerOutput)>) {
-//     for (output) in controllers.iter() {
-//         println!(
-//             "Entity touches the ground: {:?}",
-//             output.grounded
-//         );
-//     }
-// }
-
-// fn update_character_grounded(
-//     mut character_controller_outputs: Query<
-//         &mut Grounded, With<Player>>,
-//     ball_q: Query<Entity, With<Floor>>,
-// ) {
-//     for ball_entity in ball_q.iter() {
-//         // println!("ball_entity: {ball_entity}");
-//         for (output, mut hit_status) in character_controller_outputs.iter_mut() {
-//             for collision in &output.collisions {
-//                 if ball_entity == collision.entity {
-                    
-//                     // let hit = collision.hit.details
-//                     if let Some(hit_details) = collision.hit.details {
-//                         println!("hit details: {:?}", hit_details);
-//                         *hit_status = HitStatus{is_hit:true, normal1_of_hit: Some(hit_details.normal1)};
-//                     }
-                    
-//                     // we need to flip was_hit to true and save the normal, and the mass of the object
-//                     // body.apply(value);
-//                 }
-//             }
-//         }
-//     }
-// }
-
-// fn debug_player_hit(
-//     mut query: Query<
-//         (&HitStatus,
-//         &mut KinematicCharacterController),
-//         (With<Player>, Changed<HitStatus>)>,
-// ) {
-//     for (hit_status, mut controller) in query.iter_mut() {
-//         eprintln!(
-//             "hit_status: {:?}",
-//             hit_status
-//         );
-//         controller.translation = hit_status.normal1_of_hit;
-//     }
+// for contact_force_event in contact_force_events.read() {
+//     println!("Received contact force event: {:?}", contact_force_event);
 // }
