@@ -1,7 +1,7 @@
+use crate::world::Ground;
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 use bevy_third_person_camera::*;
-use crate::world::Ground;
 
 const MOVEMENT_SPEED: f32 = 8.0;
 const JUMP_SPEED: f32 = 22.8;
@@ -39,53 +39,46 @@ fn player_movement(
     // let mut jump_direction = 0.0;
 
     let mut direction = Vec3::ZERO;
+    let mut movement_linvel = Vec3::ZERO;
     // We need to remove the y component out of these
     if keys.pressed(KeyCode::KeyW) {
-        direction += (*cam.forward()).with_y(0.0);
+        if grounded.0 > 0 {
+            direction += (*cam.forward()).with_y(0.0);
+        }
     }
 
     if keys.pressed(KeyCode::KeyS) {
-        direction += (*cam.back()).with_y(0.0);
+        if grounded.0 > 0 {
+            direction += (*cam.back()).with_y(0.0);
+        }
     }
 
     if keys.pressed(KeyCode::KeyA) {
-        direction += (*cam.left()).with_y(0.0);
+        if grounded.0 > 0 {
+            direction += (*cam.left()).with_y(0.0);
+        }
     }
 
     if keys.pressed(KeyCode::KeyD) {
-        direction += (*cam.right()).with_y(0.0);
+        if grounded.0 > 0 {
+            direction += (*cam.right()).with_y(0.0);
+        }
     }
+
     if keys.pressed(KeyCode::KeyE) {
         // jump_direction = 1.0;
         if grounded.0 > 0 {
-            player_velocity.linvel = Vec3::new(0.0, JUMP_SPEED, 0.0);
+            movement_linvel += Vec3::new(0.0, JUMP_SPEED, 0.0);
         }
-        
     }
 
     let delta_time = time.delta_seconds();
-    // let jump_speed = jump_direction * JUMP_SPEED;
 
-    // let is_grounded = output.map(|o| o.grounded).unwrap_or(false);
-    // if is_grounded {
-    //     *grounded_timer = GROUND_TIMER;
-    //     *vertical_movement = 0.0;
-    // }
-
-    // // If we are grounded we can jump
-    // if *grounded_timer > 0.0 {
-    //     *grounded_timer -= delta_time;
-    //     // If we jump we clear the grounded tolerance
-    //     if jump_speed > 0.0 {
-    //         *vertical_movement = jump_speed;
-    //         *grounded_timer = 0.0;
-    //     }
-    // }
-
-    // direction.y = 0.0;
     let movement = direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
+    movement_linvel += movement * 5.0;
 
     player_transform.translation += movement;
+    player_velocity.linvel += movement_linvel;
 
     if direction.length_squared() > 0.0 {
         player_transform.look_to(direction, Vec3::Y)
@@ -130,6 +123,7 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
             linvel: Vec3::new(0.0, 0.0, 0.0),
             angvel: Vec3::new(0.0, 0.0, 0.0),
         })
+        .insert(Restitution::coefficient(0.1))
         .insert(GravityScale(5.5))
         .insert(AdditionalMassProperties::Mass(20.0))
         .insert(LockedAxes::ROTATION_LOCKED)
@@ -143,7 +137,6 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
 fn grounded_ungrounded_on_collision(
     mut collision_events: EventReader<CollisionEvent>,
     // _rapier_context: Res<RapierContext>,
-
     mut player_q: Query<(Entity, &mut Grounded), With<Player>>,
     ground_q: Query<Entity, With<Ground>>,
 ) {
@@ -155,38 +148,35 @@ fn grounded_ungrounded_on_collision(
                 let (some_player_collision_entity, other_entity) = match player_id {
                     id if id == *entity1 => (Some(entity1), entity2),
                     id if id == *entity2 => (Some(entity2), entity1),
-                    _ => (None, entity1)
+                    _ => (None, entity1),
                 };
                 if let Some(_player_collision_entity) = some_player_collision_entity {
-                    
                     let first_ground = ground_q.iter().filter(|&g| g == *other_entity).next();
                     if let Some(_ground) = first_ground {
-                        *player_grounded = Grounded (player_grounded.0 + 1);
+                        *player_grounded = Grounded(player_grounded.0 + 1);
                         println!("New ground, total count: {}", player_grounded.0);
-                    } 
+                    }
                 }
-                
             }
             CollisionEvent::Stopped(entity1, entity2, _flags) => {
                 let (some_player_collision_entity, other_entity) = match player_id {
                     id if id == *entity1 => (Some(entity1), entity2),
                     id if id == *entity2 => (Some(entity2), entity1),
-                    _ => (None, entity1)
+                    _ => (None, entity1),
                 };
                 if let Some(_player_collision_entity) = some_player_collision_entity {
-                    
                     let first_ground = ground_q.iter().filter(|&g| g == *other_entity).next();
                     if let Some(_ground) = first_ground {
-                        *player_grounded = Grounded(std::cmp::max(0,player_grounded.0 - 1));
+                        *player_grounded = Grounded(std::cmp::max(0, player_grounded.0 - 1));
                         println!("Left ground, total count: {}", player_grounded.0);
-                    } 
+                    }
                 }
             }
         }
     }
 
     // println!("Received collision event: {:?}", collision_event);
-    
+
     // println!("player_collider: {player_collider:?}");
     // if collision with ground started then player is grounded
     // if collsions with ground stopped then player is not grouunded
