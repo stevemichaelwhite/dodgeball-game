@@ -12,7 +12,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_player)
-            .add_systems(Update, player_movement)
+            .add_systems(Update, (player_movement, display_events))
             // .add_systems(Update, (read_character_controller_collisions, debug_player_hit))
             ;
     }
@@ -88,8 +88,8 @@ fn player_movement(
     // }
 
     // direction.y = 0.0;
-    let mut movement = direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
-;
+    let movement = direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
+
 
     player_transform.translation += movement;
 
@@ -138,6 +138,7 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
         .insert(GravityScale(5.5))
         .insert(AdditionalMassProperties::Mass(20.0))
         .insert(LockedAxes::ROTATION_LOCKED)
+        .insert(ActiveEvents::COLLISION_EVENTS)
 
         .with_children(|parent| {
             parent.spawn(flashlight);
@@ -145,3 +146,64 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
 }
 
 
+fn display_events(
+    mut collision_events: EventReader<CollisionEvent>,
+    mut contact_force_events: EventReader<ContactForceEvent>,
+) {
+    for collision_event in collision_events.read() {
+        println!("Received collision event: {:?}", collision_event);
+    }
+
+    for contact_force_event in contact_force_events.read() {
+        println!("Received contact force event: {:?}", contact_force_event);
+    }
+}
+
+// fn read_result_system(controllers: Query<(&KinematicCharacterControllerOutput)>) {
+//     for (output) in controllers.iter() {
+//         println!(
+//             "Entity touches the ground: {:?}",
+//             output.grounded
+//         );
+//     }
+// }
+
+// fn update_character_grounded(
+//     mut character_controller_outputs: Query<
+//         &mut Grounded, With<Player>>,
+//     ball_q: Query<Entity, With<Floor>>,
+// ) {
+//     for ball_entity in ball_q.iter() {
+//         // println!("ball_entity: {ball_entity}");
+//         for (output, mut hit_status) in character_controller_outputs.iter_mut() {
+//             for collision in &output.collisions {
+//                 if ball_entity == collision.entity {
+                    
+//                     // let hit = collision.hit.details
+//                     if let Some(hit_details) = collision.hit.details {
+//                         println!("hit details: {:?}", hit_details);
+//                         *hit_status = HitStatus{is_hit:true, normal1_of_hit: Some(hit_details.normal1)};
+//                     }
+                    
+//                     // we need to flip was_hit to true and save the normal, and the mass of the object
+//                     // body.apply(value);
+//                 }
+//             }
+//         }
+//     }
+// }
+
+// fn debug_player_hit(
+//     mut query: Query<
+//         (&HitStatus,
+//         &mut KinematicCharacterController),
+//         (With<Player>, Changed<HitStatus>)>,
+// ) {
+//     for (hit_status, mut controller) in query.iter_mut() {
+//         eprintln!(
+//             "hit_status: {:?}",
+//             hit_status
+//         );
+//         controller.translation = hit_status.normal1_of_hit;
+//     }
+// }
