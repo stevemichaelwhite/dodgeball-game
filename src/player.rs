@@ -4,7 +4,7 @@ use bevy_third_person_camera::*;
 use crate::world::Ground;
 
 const MOVEMENT_SPEED: f32 = 8.0;
-const JUMP_SPEED: f32 = 10.8;
+const JUMP_SPEED: f32 = 30.8;
 
 pub struct PlayerPlugin;
 
@@ -19,17 +19,17 @@ impl Plugin for PlayerPlugin {
 
 #[derive(Component)]
 struct Player;
-#[derive(Component)]
+#[derive(Component, PartialEq)]
 struct Grounded(bool);
 
 fn player_movement(
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut player_q: Query<(&mut Transform, &mut Velocity), With<Player>>,
+    mut player_q: Query<(&mut Transform, &mut Velocity, &Grounded), With<Player>>,
     cam_q: Query<&Transform, (With<Camera3d>, Without<Player>)>,
 ) {
     // let (mut player_transform, mut _controller, _output) = player_q.single_mut();
-    let (mut player_transform, mut player_velocity) = player_q.single_mut();
+    let (mut player_transform, mut player_velocity, grounded) = player_q.single_mut();
 
     let cam = match cam_q.get_single() {
         Ok(c) => c,
@@ -57,7 +57,10 @@ fn player_movement(
     }
     if keys.pressed(KeyCode::KeyE) {
         // jump_direction = 1.0;
-        player_velocity.linvel = Vec3::new(0.0, JUMP_SPEED, 0.0);
+        if *grounded == Grounded(true) {
+            player_velocity.linvel = Vec3::new(0.0, JUMP_SPEED, 0.0);
+        }
+        
     }
 
     let delta_time = time.delta_seconds();
@@ -140,10 +143,10 @@ fn display_events(
     mut collision_events: EventReader<CollisionEvent>,
     // _rapier_context: Res<RapierContext>,
 
-    mut player_q: Query<(Entity, &Collider, &mut Grounded), With<Player>>,
+    mut player_q: Query<(Entity, &mut Grounded), With<Player>>,
     ground_q: Query<Entity, With<Ground>>,
 ) {
-    let (player_id, _player_collider, mut _player_grounded) = player_q.single_mut();
+    let (player_id, mut player_grounded) = player_q.single_mut();
     for collision_event in collision_events.read() {
         // let entity1 = collision_event.0;
         match collision_event {
@@ -157,6 +160,7 @@ fn display_events(
                     
                     let first_ground = ground_q.iter().filter(|&g| g == *other_entity).next();
                     if let Some(_ground) = first_ground {
+                        *player_grounded = Grounded (true);
                         println!("player collided with ground!");
                     } 
                 }
@@ -172,6 +176,7 @@ fn display_events(
                     
                     let first_ground = ground_q.iter().filter(|&g| g == *other_entity).next();
                     if let Some(_ground) = first_ground {
+                        *player_grounded = Grounded (false);
                         println!("player left the ground!");
                     } 
                 }
