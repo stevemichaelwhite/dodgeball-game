@@ -1,21 +1,21 @@
 use bevy::prelude::*;
 // use rand::Rng;
-use crate::world::Ball;
+// use crate::world::Ball;
 use bevy_rapier3d::prelude::*;
 use bevy_third_person_camera::*;
 
-const GROUND_TIMER: f32 = 0.5;
+// const GROUND_TIMER: f32 = 0.5;
 const MOVEMENT_SPEED: f32 = 8.0;
-const JUMP_SPEED: f32 = 0.8;
-const GRAVITY: f32 = -9.81 / 4.0;
-const TERMINAL_VELOCITY: f32 = -54.0 / 3.0;
+const JUMP_SPEED: f32 = 10.8;
+// const GRAVITY: f32 = -9.81 / 4.0;
+// const TERMINAL_VELOCITY: f32 = -54.0 / 3.0;
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_player)
-            // .add_systems(FixedUpdate, player_movement)
+            .add_systems(Update, player_movement)
             // .add_systems(Update, (read_character_controller_collisions, debug_player_hit))
             ;
     }
@@ -36,24 +36,27 @@ fn player_movement(
     mut player_q: Query<
         (
             &mut Transform,
-            &mut KinematicCharacterController,
-            Option<&KinematicCharacterControllerOutput>,
+            &mut Velocity,
+            // &mut KinematicCharacterController,
+            // Option<&KinematicCharacterControllerOutput>,
             // &mut Collider,
-        ),
+        )
+        ,
         With<Player>,
     >,
     cam_q: Query<&Transform, (With<Camera3d>, Without<Player>)>,
-    mut vertical_movement: Local<f32>,
-    mut grounded_timer: Local<f32>,
+    // vertical_movement: Local<f32>,
+    // mut grounded_timer: Local<f32>,
 ) {
-    let (mut player_transform, mut controller, output) = player_q.single_mut();
+    // let (mut player_transform, mut _controller, _output) = player_q.single_mut();
+    let (mut player_transform, mut player_velocity) = player_q.single_mut();
 
     let cam = match cam_q.get_single() {
         Ok(c) => c,
         Err(e) => Err(format!("Error retrieving camera: {}", e)).unwrap(),
     };
 
-    let mut jump_direction = 0.0;
+    // let mut jump_direction = 0.0;
 
     let mut direction = Vec3::ZERO;
     // We need to remove the y component out of these
@@ -73,41 +76,39 @@ fn player_movement(
         direction += (*cam.right()).with_y(0.0);
     }
     if keys.pressed(KeyCode::KeyE) {
-        jump_direction = 1.0;
+        // jump_direction = 1.0;
+        player_velocity.linvel = Vec3::new(0.0, JUMP_SPEED, 0.0);
     }
 
     let delta_time = time.delta_seconds();
-    let jump_speed = jump_direction * JUMP_SPEED;
+    // let jump_speed = jump_direction * JUMP_SPEED;
 
-    let is_grounded = output.map(|o| o.grounded).unwrap_or(false);
-    if is_grounded {
-        *grounded_timer = GROUND_TIMER;
-        *vertical_movement = 0.0;
-    }
+    // let is_grounded = output.map(|o| o.grounded).unwrap_or(false);
+    // if is_grounded {
+    //     *grounded_timer = GROUND_TIMER;
+    //     *vertical_movement = 0.0;
+    // }
 
-    // If we are grounded we can jump
-    if *grounded_timer > 0.0 {
-        *grounded_timer -= delta_time;
-        // If we jump we clear the grounded tolerance
-        if jump_speed > 0.0 {
-            *vertical_movement = jump_speed;
-            *grounded_timer = 0.0;
-        }
-    }
+    // // If we are grounded we can jump
+    // if *grounded_timer > 0.0 {
+    //     *grounded_timer -= delta_time;
+    //     // If we jump we clear the grounded tolerance
+    //     if jump_speed > 0.0 {
+    //         *vertical_movement = jump_speed;
+    //         *grounded_timer = 0.0;
+    //     }
+    // }
 
     // direction.y = 0.0;
     let mut movement = direction.normalize_or_zero() * MOVEMENT_SPEED * delta_time;
-    *vertical_movement += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
-    *vertical_movement = (*vertical_movement).max(TERMINAL_VELOCITY);
-    // let mut rng = rand::thread_rng();
+    // *vertical_movement += GRAVITY * delta_time * controller.custom_mass.unwrap_or(1.0);
+    // *vertical_movement = (*vertical_movement).max(TERMINAL_VELOCITY);
 
-    // let jitter_vertical: f32 = rng.gen_range(-0.09..=0.09);
-    // *vertical_movement += jitter_vertical;
 
-    movement.y = *vertical_movement;
+    // movement.y = *vertical_movement;
     // movement.y = jump_speed;
 
-    controller.translation = Some(movement);
+    player_transform.translation += movement;
     // controller.translation = Some(Vec3::new(0.0,*vertical_movement, 0.0));
     // player_transform.translation += movement;
 
@@ -171,6 +172,12 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
     );
     commands
         .spawn(player)
+        .insert(Velocity {
+            linvel: Vec3::new(0.0, 0.0, 0.0),
+            angvel: Vec3::new(0.0, 0.0, 0.0),
+        })
+        .insert(GravityScale(5.5))
+        .insert(AdditionalMassProperties::Mass(20.0))
         .insert(LockedAxes::ROTATION_LOCKED)
         // .insert(ExternalImpulse {
         //     impulse: Vec3::new(50.0, 0.0, 25.0),
