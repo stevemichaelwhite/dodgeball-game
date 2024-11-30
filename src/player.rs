@@ -4,14 +4,14 @@ use bevy_third_person_camera::*;
 use crate::world::Ground;
 
 const MOVEMENT_SPEED: f32 = 8.0;
-const JUMP_SPEED: f32 = 30.8;
+const JUMP_SPEED: f32 = 22.8;
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_player)
-            .add_systems(Update, (player_movement, display_events))
+            .add_systems(Update, (player_movement, grounded_ungrounded_on_collision))
             // .add_systems(Update, (read_character_controller_collisions, debug_player_hit))
             ;
     }
@@ -20,7 +20,7 @@ impl Plugin for PlayerPlugin {
 #[derive(Component)]
 struct Player;
 #[derive(Component, PartialEq)]
-struct Grounded(bool);
+struct Grounded(u16);
 
 fn player_movement(
     keys: Res<ButtonInput<KeyCode>>,
@@ -57,7 +57,7 @@ fn player_movement(
     }
     if keys.pressed(KeyCode::KeyE) {
         // jump_direction = 1.0;
-        if *grounded == Grounded(true) {
+        if grounded.0 > 0 {
             player_velocity.linvel = Vec3::new(0.0, JUMP_SPEED, 0.0);
         }
         
@@ -121,7 +121,7 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
         Name::new("Player"),
         Collider::cone(0.8, 0.3),
         RigidBody::Dynamic,
-        Grounded(false),
+        Grounded(0),
         // HitStatus {is_hit: false, normal1_of_hit: None}
     );
     commands
@@ -139,7 +139,8 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
         });
 }
 
-fn display_events(
+// Instead we probably just want to check if the player is in close proximity to the ground.  Less buggy.
+fn grounded_ungrounded_on_collision(
     mut collision_events: EventReader<CollisionEvent>,
     // _rapier_context: Res<RapierContext>,
 
@@ -160,8 +161,8 @@ fn display_events(
                     
                     let first_ground = ground_q.iter().filter(|&g| g == *other_entity).next();
                     if let Some(_ground) = first_ground {
-                        *player_grounded = Grounded (true);
-                        println!("player collided with ground!");
+                        *player_grounded = Grounded (player_grounded.0 + 1);
+                        println!("New ground, total count: {}", player_grounded.0);
                     } 
                 }
                 
@@ -176,8 +177,8 @@ fn display_events(
                     
                     let first_ground = ground_q.iter().filter(|&g| g == *other_entity).next();
                     if let Some(_ground) = first_ground {
-                        *player_grounded = Grounded (false);
-                        println!("player left the ground!");
+                        *player_grounded = Grounded(std::cmp::max(0,player_grounded.0 - 1));
+                        println!("Left ground, total count: {}", player_grounded.0);
                     } 
                 }
             }
