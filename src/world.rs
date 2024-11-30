@@ -5,6 +5,9 @@ use std::time::Duration;
 
 pub struct WorldPlugin;
 
+#[derive(Component)]
+pub struct Ground;
+
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
@@ -83,6 +86,7 @@ fn spawn_floor(
         Name::new("Floor"),
         Collider::cuboid(ground_size / 2.0, ground_height, ground_size / 2.0),
         // RigidBody::Fixed,
+        Ground,
     );
     commands.spawn(floor);
 }
@@ -99,7 +103,7 @@ fn spawn_objects(
                            color_hex: String,
                            xyz: (f32, f32, f32),
                            name: String|
-     -> (PbrBundle, Name, Collider, RigidBody, Cube) {
+     -> (PbrBundle, Name, Collider, RigidBody, Cube, Ground) {
         (
             PbrBundle {
                 mesh: meshes.add(Cuboid::new(hdim_xyz.0, hdim_xyz.1, hdim_xyz.2)),
@@ -116,6 +120,7 @@ fn spawn_objects(
             Collider::cuboid(hdim_xyz.0 / 2.0, hdim_xyz.1 / 2.0, hdim_xyz.2 / 2.0),
             RigidBody::KinematicPositionBased,
             Cube,
+            Ground,
         )
     };
     commands.spawn(create_cube(
@@ -136,7 +141,7 @@ fn spawn_objects(
 fn setup_floor(mut commands: Commands) {
     /* Create the ground. */
     commands
-        .spawn(Collider::cuboid(100.0, 0.1, 100.0))
+        .spawn((Collider::cuboid(100.0, 0.1, 100.0), Ground))
         .insert(TransformBundle::from(Transform::from_xyz(0.0, -2.0, 0.0)));
 }
 

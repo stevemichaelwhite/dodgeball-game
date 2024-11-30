@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 use bevy_third_person_camera::*;
+use crate::world::Ground;
 
 const MOVEMENT_SPEED: f32 = 8.0;
 const JUMP_SPEED: f32 = 10.8;
@@ -137,23 +138,43 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
 
 fn display_events(
     mut collision_events: EventReader<CollisionEvent>,
-    rapier_context: Res<RapierContext>,
+    // _rapier_context: Res<RapierContext>,
 
     mut player_q: Query<(Entity, &Collider, &mut Grounded), With<Player>>,
+    ground_q: Query<Entity, With<Ground>>,
 ) {
     let (player_id, _player_collider, mut _player_grounded) = player_q.single_mut();
     for collision_event in collision_events.read() {
         // let entity1 = collision_event.0;
         match collision_event {
             CollisionEvent::Started(entity1, entity2, _flags) => {
-                println!("Collision started between {:?} and {:?}", entity1, entity2);
-                // rapier_context.collider_entity(entity1);
-                println!("player_id is entity 1: {}", player_id == *entity1);
-                println!("player_id is entity 2: {}", player_id == *entity2);
+                let (some_player_collision_entity, other_entity) = match player_id {
+                    id if id == *entity1 => (Some(entity1), entity2),
+                    id if id == *entity2 => (Some(entity2), entity1),
+                    _ => (None, entity1)
+                };
+                if let Some(_player_collision_entity) = some_player_collision_entity {
+                    
+                    let first_ground = ground_q.iter().filter(|&g| g == *other_entity).next();
+                    if let Some(_ground) = first_ground {
+                        println!("player collided with ground!");
+                    } 
+                }
+                
             }
             CollisionEvent::Stopped(entity1, entity2, _flags) => {
-                println!("Collision stopped between {:?} and {:?}", entity1, entity2);
-                // println!("player_id: {player_id:?}");
+                let (some_player_collision_entity, other_entity) = match player_id {
+                    id if id == *entity1 => (Some(entity1), entity2),
+                    id if id == *entity2 => (Some(entity2), entity1),
+                    _ => (None, entity1)
+                };
+                if let Some(_player_collision_entity) = some_player_collision_entity {
+                    
+                    let first_ground = ground_q.iter().filter(|&g| g == *other_entity).next();
+                    if let Some(_ground) = first_ground {
+                        println!("player left the ground!");
+                    } 
+                }
             }
         }
     }
