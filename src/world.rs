@@ -94,6 +94,9 @@ fn spawn_floor(
 #[derive(Component)]
 pub struct Cube;
 
+#[derive(Bundle)]
+struct GroundBundle(Collider, Ground, Transform);
+
 fn spawn_objects(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -103,8 +106,11 @@ fn spawn_objects(
                            color_hex: String,
                            xyz: (f32, f32, f32),
                            name: String|
-     -> (PbrBundle, Name, Collider, RigidBody, Cube, Ground) {
-        (
+     -> (
+        (PbrBundle, Name, Collider, RigidBody, Cube),
+        GroundBundle,
+    ) {
+        let cube = (
             PbrBundle {
                 mesh: meshes.add(Cuboid::new(hdim_xyz.0, hdim_xyz.1, hdim_xyz.2)),
                 material: materials.add(StandardMaterial {
@@ -120,22 +126,32 @@ fn spawn_objects(
             Collider::cuboid(hdim_xyz.0 / 2.0, hdim_xyz.1 / 2.0, hdim_xyz.2 / 2.0),
             RigidBody::KinematicPositionBased,
             Cube,
+            // Ground,
+        );
+        let cube_ground = GroundBundle(
+            Collider::cuboid(hdim_xyz.0 / 2.0 - 0.05, 0.5, hdim_xyz.2 / 2.0 - 0.05),
             Ground,
-        )
+            // translate by halfy cube - halfy ground
+            Transform::from_xyz(0.0, hdim_xyz.1 / 2.0 -0.5 + 0.05 , 0.0)
+        );
+        (cube, cube_ground)
     };
-    commands.spawn(create_cube(
+    let (blue_cube, blue_cube_ground) = create_cube(
         (2.0, 2.0, 2.0),
         "#1a1fad".to_string(),
         (1.7, 1.0, 0.0),
         "BlueCube".to_string(),
-    ));
+    );
+    commands.spawn(blue_cube).with_children(|parent| {
+        parent.spawn(blue_cube_ground);
+    });
 
-    commands.spawn(create_cube(
-        (2.0, 2.0, 2.0),
-        "#ad1a30".to_string(),
-        (-3.3, 1.0, 3.5),
-        "RedCube".to_string(),
-    ));
+    // commands.spawn(create_cube(
+    //     (2.0, 2.0, 2.0),
+    //     "#ad1a30".to_string(),
+    //     (-3.3, 1.0, 3.5),
+    //     "RedCube".to_string(),
+    // ));
 }
 
 fn setup_floor(mut commands: Commands) {
