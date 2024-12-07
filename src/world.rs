@@ -94,7 +94,9 @@ fn spawn_floor(
 #[derive(Component)]
 
 // we need to add the oscillator here so that player movement can query it
-pub struct Cubeovator {oscillator: f32}
+pub struct Cubeovator {
+    pub oscillator: f32,
+}
 
 #[derive(Bundle)]
 struct GroundBundle(Collider, Ground, Transform);
@@ -127,14 +129,14 @@ fn spawn_objects(
             Name::new(name),
             Collider::cuboid(hdim_xyz.0 / 2.0, hdim_xyz.1 / 2.0, hdim_xyz.2 / 2.0),
             RigidBody::KinematicPositionBased,
-            Cubeovator{oscillator: 0.0},
+            Cubeovator { oscillator: 0.0 },
             // Ground,
         );
         let cube_ground = GroundBundle(
             Collider::cuboid(hdim_xyz.0 / 2.0 - 0.05, 0.5, hdim_xyz.2 / 2.0 - 0.05),
             Ground,
             // translate by halfy cube - halfy ground
-            Transform::from_xyz(0.0, hdim_xyz.1 / 2.0 -0.5 + 0.05 , 0.0)
+            Transform::from_xyz(0.0, hdim_xyz.1 / 2.0 - 0.5 + 0.05, 0.0),
         );
         (cube, cube_ground)
     };
@@ -206,21 +208,26 @@ fn despawn_ball(
 }
 
 // we want to apply the same translation to the player if he is grounded on the cube
-fn move_cubes(time: Res<Time>, mut cube_q: Query<(Entity, &mut Transform, &mut Cubeovator), With<RigidBody>>)//, 
-// mut player_q: Query<(&Grounded, &mut Transform), With<Player>>) 
+fn move_cubes(
+    time: Res<Time>,
+    mut cube_q: Query<(Entity, &mut Transform, &mut Cubeovator), With<RigidBody>>,
+) //,
+// mut player_q: Query<(&Grounded, &mut Transform), With<Player>>)
 {
     // let  (player_grounded, mut player_transform) = player_q.single_mut();
 
-    cube_q.iter_mut().for_each(|(_entity, mut transform, mut cubeovator)| {
-        let oscillator = (time.elapsed_seconds() % (TAU as f32)).sin();
-        cubeovator.oscillator = oscillator;
+    cube_q
+        .iter_mut()
+        .for_each(|(_entity, mut transform, mut cubeovator)| {
+            let oscillator = (time.elapsed_seconds() % (TAU as f32)).sin();
+            cubeovator.oscillator = oscillator / 6.0;
 
-        transform.translation.y += oscillator / 6.0;
-        // if (player_grounded.count == 1) && (player_grounded.entities[0] == entity) {
-        //     player_transform.translation.y += oscillator / 6.0;
-        // }
-        // println!("Sine seconds: {}", oscillator);
-    });
+            transform.translation.y += oscillator / 6.0;
+            // if (player_grounded.count == 1) && (player_grounded.entities[0] == entity) {
+            //     player_transform.translation.y += oscillator / 6.0;
+            // }
+            // println!("Sine seconds: {}", oscillator);
+        });
 }
 
 #[derive(Resource)]
