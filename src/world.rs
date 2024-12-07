@@ -92,7 +92,9 @@ fn spawn_floor(
 }
 
 #[derive(Component)]
-pub struct Cube;
+
+// we need to add the oscillator here so that player movement can query it
+pub struct Cubeovator {oscillator: f32}
 
 #[derive(Bundle)]
 struct GroundBundle(Collider, Ground, Transform);
@@ -107,7 +109,7 @@ fn spawn_objects(
                            xyz: (f32, f32, f32),
                            name: String|
      -> (
-        (PbrBundle, Name, Collider, RigidBody, Cube),
+        (PbrBundle, Name, Collider, RigidBody, Cubeovator),
         GroundBundle,
     ) {
         let cube = (
@@ -125,7 +127,7 @@ fn spawn_objects(
             Name::new(name),
             Collider::cuboid(hdim_xyz.0 / 2.0, hdim_xyz.1 / 2.0, hdim_xyz.2 / 2.0),
             RigidBody::KinematicPositionBased,
-            Cube,
+            Cubeovator{oscillator: 0.0},
             // Ground,
         );
         let cube_ground = GroundBundle(
@@ -140,7 +142,7 @@ fn spawn_objects(
         (2.0, 2.0, 2.0),
         "#1a1fad".to_string(),
         (1.7, 1.0, 0.0),
-        "BlueCube".to_string(),
+        "BlueCubeovator".to_string(),
     );
     commands.spawn(blue_cube).with_children(|parent| {
         parent.spawn(blue_cube_ground);
@@ -150,7 +152,7 @@ fn spawn_objects(
     //     (2.0, 2.0, 2.0),
     //     "#ad1a30".to_string(),
     //     (-3.3, 1.0, 3.5),
-    //     "RedCube".to_string(),
+    //     "RedCubeovator".to_string(),
     // ));
 }
 
@@ -204,10 +206,19 @@ fn despawn_ball(
 }
 
 // we want to apply the same translation to the player if he is grounded on the cube
-fn move_cubes(time: Res<Time>, mut cube_q: Query<&mut Transform, (With<RigidBody>, With<Cube>)>) {
-    cube_q.iter_mut().for_each(|mut transfrom| {
+fn move_cubes(time: Res<Time>, mut cube_q: Query<(Entity, &mut Transform, &mut Cubeovator), With<RigidBody>>)//, 
+// mut player_q: Query<(&Grounded, &mut Transform), With<Player>>) 
+{
+    // let  (player_grounded, mut player_transform) = player_q.single_mut();
+
+    cube_q.iter_mut().for_each(|(_entity, mut transform, mut cubeovator)| {
         let oscillator = (time.elapsed_seconds() % (TAU as f32)).sin();
-        transfrom.translation.y += oscillator / 6.0;
+        cubeovator.oscillator = oscillator;
+
+        transform.translation.y += oscillator / 6.0;
+        // if (player_grounded.count == 1) && (player_grounded.entities[0] == entity) {
+        //     player_transform.translation.y += oscillator / 6.0;
+        // }
         // println!("Sine seconds: {}", oscillator);
     });
 }

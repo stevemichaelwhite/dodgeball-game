@@ -18,15 +18,16 @@ impl Plugin for PlayerPlugin {
 }
 
 #[derive(Component)]
-struct Player;
+pub struct Player;
 #[derive(Component, PartialEq)]
 // We also want to track the id of the ground he is touching
 // If he is on one ground only and that ground is moving, then we want to apply the translation to the player
-struct Grounded{
-    count: u16,
-    entities: Vec<Entity>,
+pub struct Grounded{
+    pub count: u16,
+    pub entities: Vec<Entity>,
 }
 
+// Check for Some(Cubeovator)
 fn player_movement(
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
