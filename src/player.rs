@@ -20,7 +20,12 @@ impl Plugin for PlayerPlugin {
 #[derive(Component)]
 struct Player;
 #[derive(Component, PartialEq)]
-struct Grounded(u16);
+// We also want to track the id of the ground he is touching
+// If he is on one ground only and that ground is moving, then we want to apply the translation to the player
+struct Grounded{
+    count: u16,
+    entities: Vec<Entity>,
+}
 
 fn player_movement(
     keys: Res<ButtonInput<KeyCode>>,
@@ -42,32 +47,32 @@ fn player_movement(
     let mut movement_linvel = Vec3::ZERO;
     // We need to remove the y component out of these
     if keys.pressed(KeyCode::KeyW) {
-        if grounded.0 > 0 {
+        if grounded.count > 0 {
             direction += (*cam.forward()).with_y(0.0);
         }
     }
 
     if keys.pressed(KeyCode::KeyS) {
-        if grounded.0 > 0 {
+        if grounded.count > 0 {
             direction += (*cam.back()).with_y(0.0);
         }
     }
 
     if keys.pressed(KeyCode::KeyA) {
-        if grounded.0 > 0 {
+        if grounded.count > 0 {
             direction += (*cam.left()).with_y(0.0);
         }
     }
 
     if keys.pressed(KeyCode::KeyD) {
-        if grounded.0 > 0 {
+        if grounded.count > 0 {
             direction += (*cam.right()).with_y(0.0);
         }
     }
 
     if keys.pressed(KeyCode::KeyE) {
         // jump_direction = 1.0;
-        if grounded.0 > 0 {
+        if grounded.count > 0 {
             movement_linvel += Vec3::new(0.0, JUMP_SPEED, 0.0);
         }
     }
@@ -114,7 +119,7 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
         Name::new("Player"),
         Collider::cone(0.8, 0.3),
         RigidBody::Dynamic,
-        Grounded(0),
+        Grounded{count: 0, entities: vec![]},
         // HitStatus {is_hit: false, normal1_of_hit: None}
     );
     commands
@@ -153,8 +158,10 @@ fn grounded_ungrounded_on_collision(
                 if let Some(_player_collision_entity) = some_player_collision_entity {
                     let first_ground = ground_q.iter().filter(|&g| g == *other_entity).next();
                     if let Some(_ground) = first_ground {
-                        *player_grounded = Grounded(player_grounded.0 + 1);
-                        println!("New ground, total count: {}", player_grounded.0);
+                        player_grounded.count += 1 ;
+                        player_grounded.entities.push(_ground);
+                        // *player_grounded = Grounded(player_grounded.count + 1);
+                        println!("New ground, total count: {}", player_grounded.count);
                     }
                 }
             }
@@ -167,8 +174,9 @@ fn grounded_ungrounded_on_collision(
                 if let Some(_player_collision_entity) = some_player_collision_entity {
                     let first_ground = ground_q.iter().filter(|&g| g == *other_entity).next();
                     if let Some(_ground) = first_ground {
-                        *player_grounded = Grounded(std::cmp::max(0, player_grounded.0 - 1));
-                        println!("Left ground, total count: {}", player_grounded.0);
+                        player_grounded.count = std::cmp::max(0, player_grounded.count - 1);
+                        player_grounded.entities.retain(|&x| x != _ground);
+                        println!("Left ground, total count: {}", player_grounded.count);
                     }
                 }
             }

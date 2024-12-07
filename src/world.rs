@@ -203,6 +203,7 @@ fn despawn_ball(
     }
 }
 
+// we want to apply the same translation to the player if he is grounded on the cube
 fn move_cubes(time: Res<Time>, mut cube_q: Query<&mut Transform, (With<RigidBody>, With<Cube>)>) {
     cube_q.iter_mut().for_each(|mut transfrom| {
         let oscillator = (time.elapsed_seconds() % (TAU as f32)).sin();
