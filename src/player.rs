@@ -155,7 +155,10 @@ fn spawn_player(mut commands: Commands, assets: Res<AssetServer>) {
         .with_children(|parent| {
             parent.spawn(flashlight);
             // Can we use the sensor collider to provide us some grounded tolerance?
-            parent.spawn((PlayerGroundedSensor, Collider::cone(1.0, 0.3))).insert(ActiveEvents::COLLISION_EVENTS).insert(Sensor);
+            parent
+                .spawn((PlayerGroundedSensor, Collider::cone(1.0, 0.3)))
+                .insert(ActiveEvents::COLLISION_EVENTS)
+                .insert(Sensor);
         });
 }
 
@@ -165,22 +168,24 @@ fn grounded_ungrounded_on_collision(
     mut collision_events: EventReader<CollisionEvent>,
     mut player_q: Query<(&mut Grounded, &Children), With<Player>>,
     ground_q: Query<Entity, With<Ground>>,
-    player_ground_sensor_collider_q: Query<Entity,With<PlayerGroundedSensor>>,
+    player_ground_sensor_collider_q: Query<Entity, With<PlayerGroundedSensor>>,
 ) {
-    let ( mut player_grounded, children) = player_q.single_mut();
+    let (mut player_grounded, children) = player_q.single_mut();
     for &child in children.iter() {
         if let Ok(player_ground_sensor_id) = player_ground_sensor_collider_q.get(child) {
             for collision_event in collision_events.read() {
                 // let entity1 = collision_event.0;
                 match collision_event {
                     CollisionEvent::Started(entity1, entity2, _flags) => {
-                        let (some_player_collision_entity, other_entity) = match player_ground_sensor_id {
-                            id if id == *entity1 => (Some(entity1), entity2),
-                            id if id == *entity2 => (Some(entity2), entity1),
-                            _ => (None, entity1),
-                        };
+                        let (some_player_collision_entity, other_entity) =
+                            match player_ground_sensor_id {
+                                id if id == *entity1 => (Some(entity1), entity2),
+                                id if id == *entity2 => (Some(entity2), entity1),
+                                _ => (None, entity1),
+                            };
                         if let Some(_player_collision_entity) = some_player_collision_entity {
-                            let first_ground = ground_q.iter().filter(|&g| g == *other_entity).next();
+                            let first_ground =
+                                ground_q.iter().filter(|&g| g == *other_entity).next();
                             if let Some(_ground) = first_ground {
                                 player_grounded.count += 1;
                                 player_grounded.entities.push(_ground);
@@ -190,13 +195,15 @@ fn grounded_ungrounded_on_collision(
                         }
                     }
                     CollisionEvent::Stopped(entity1, entity2, _flags) => {
-                        let (some_player_collision_entity, other_entity) = match player_ground_sensor_id {
-                            id if id == *entity1 => (Some(entity1), entity2),
-                            id if id == *entity2 => (Some(entity2), entity1),
-                            _ => (None, entity1),
-                        };
+                        let (some_player_collision_entity, other_entity) =
+                            match player_ground_sensor_id {
+                                id if id == *entity1 => (Some(entity1), entity2),
+                                id if id == *entity2 => (Some(entity2), entity1),
+                                _ => (None, entity1),
+                            };
                         if let Some(_player_collision_entity) = some_player_collision_entity {
-                            let first_ground = ground_q.iter().filter(|&g| g == *other_entity).next();
+                            let first_ground =
+                                ground_q.iter().filter(|&g| g == *other_entity).next();
                             if let Some(_ground) = first_ground {
                                 player_grounded.count = std::cmp::max(0, player_grounded.count - 1);
                                 player_grounded.entities.retain(|&x| x != _ground);
@@ -209,7 +216,6 @@ fn grounded_ungrounded_on_collision(
         }
     }
     //also query the PlayerGroundedSensor
-    
 
     // println!("Received collision event: {:?}", collision_event);
 
