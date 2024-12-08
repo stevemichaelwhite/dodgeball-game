@@ -94,9 +94,7 @@ fn spawn_floor(
 #[derive(Component)]
 
 // we need to add the oscillator here so that player movement can query it
-pub struct Cubeovator {
-    pub oscillator: f32,
-}
+pub struct Cubeovator;
 
 #[derive(Bundle)]
 struct GroundBundle(Collider, Ground, Transform);
@@ -129,7 +127,7 @@ fn spawn_objects(
             Name::new(name),
             Collider::cuboid(hdim_xyz.0 / 2.0, hdim_xyz.1 / 2.0, hdim_xyz.2 / 2.0),
             RigidBody::KinematicPositionBased,
-            Cubeovator { oscillator: 0.0 },
+            Cubeovator,
             // Ground,
         );
         let cube_ground = GroundBundle(
@@ -149,13 +147,6 @@ fn spawn_objects(
     commands.spawn(blue_cube).with_children(|parent| {
         parent.spawn(blue_cube_ground);
     });
-
-    // commands.spawn(create_cube(
-    //     (2.0, 2.0, 2.0),
-    //     "#ad1a30".to_string(),
-    //     (-3.3, 1.0, 3.5),
-    //     "RedCubeovator".to_string(),
-    // ));
 }
 
 fn setup_floor(mut commands: Commands) {
@@ -200,39 +191,24 @@ fn despawn_ball(
         // timers gotta be ticked, to work
         fuse_timer.timer.tick(time.delta());
 
-        // if it finished, despawn the bomb
+        // if it finished, despawn the ball
         if fuse_timer.timer.finished() {
             commands.entity(entity).despawn();
         }
     }
 }
 
-// we want to apply the same translation to the player if he is grounded on the cube
-fn move_cubes(
-    time: Res<Time>,
-    mut cube_q: Query<(Entity, &mut Transform, &mut Cubeovator), With<RigidBody>>,
-) //,
-// mut player_q: Query<(&Grounded, &mut Transform), With<Player>>)
-{
-    // let  (player_grounded, mut player_transform) = player_q.single_mut();
+fn move_cubes(time: Res<Time>, mut cube_q: Query<&mut Transform, With<Cubeovator>>) {
+    cube_q.iter_mut().for_each(|mut transform| {
+        let oscillator = (time.elapsed_seconds() % (TAU as f32)).sin();
 
-    cube_q
-        .iter_mut()
-        .for_each(|(_entity, mut transform, mut cubeovator)| {
-            let oscillator = (time.elapsed_seconds() % (TAU as f32)).sin();
-            cubeovator.oscillator = oscillator / 6.0;
-
-            transform.translation.y += oscillator / 6.0;
-            // if (player_grounded.count == 1) && (player_grounded.entities[0] == entity) {
-            //     player_transform.translation.y += oscillator / 6.0;
-            // }
-            // println!("Sine seconds: {}", oscillator);
-        });
+        transform.translation.y += oscillator / 6.0;
+    });
 }
 
 #[derive(Resource)]
 struct BallSpawnConfig {
-    /// How often to spawn a new bomb? (repeating timer)
+    /// How often to spawn a new ball? (repeating timer)
     timer: Timer,
 }
 
@@ -245,7 +221,7 @@ fn setup_ball_spawning(mut commands: Commands) {
 
 #[derive(Component)]
 struct BallLifetime {
-    /// track when the bomb should explode (non-repeating timer)
+    /// track when the ball should despawn (non-repeating timer)
     timer: Timer,
 }
 
