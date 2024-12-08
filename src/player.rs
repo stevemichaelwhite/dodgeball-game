@@ -36,8 +36,6 @@ fn player_movement(
     time: Res<Time>,
     mut player_q: Query<(&mut Transform, &mut Velocity, &Grounded), With<Player>>,
     cam_q: Query<&Transform, (With<Camera3d>, Without<Player>)>,
-    ground_q: Query<&Parent, With<Ground>>,
-    cubeovator_q: Query<&Cubeovator>,
 ) {
     // let (mut player_transform, mut _controller, _output) = player_q.single_mut();
     let (mut player_transform, mut player_velocity, grounded) = player_q.single_mut();
@@ -46,8 +44,6 @@ fn player_movement(
         Ok(c) => c,
         Err(e) => Err(format!("Error retrieving camera: {}", e)).unwrap(),
     };
-
-    // let mut jump_direction = 0.0;
 
     let mut direction = Vec3::ZERO;
     let mut movement_linvel = Vec3::ZERO;
@@ -80,16 +76,6 @@ fn player_movement(
         // jump_direction = 1.0;
         if grounded.count > 0 {
             movement_linvel += Vec3::new(0.0, JUMP_SPEED, 0.0);
-        }
-    }
-    // is it a cubeovator?
-    if grounded.count == 1 {
-        if let Ok(ground_parent) = ground_q.get(grounded.entities[0]) {
-            // if the ground has a parent, then check if it is a cubeovator
-            if let Ok(_cubeovator) = cubeovator_q.get(ground_parent.get()) {
-                // println!("Riding the Cubeovator!");
-                // player_transform.translation.y += cubeovator.oscillator;
-            }
         }
     }
 
@@ -215,15 +201,4 @@ fn grounded_ungrounded_on_collision(
             }
         }
     }
-    //also query the PlayerGroundedSensor
-
-    // println!("Received collision event: {:?}", collision_event);
-
-    // println!("player_collider: {player_collider:?}");
-    // if collision with ground started then player is grounded
-    // if collsions with ground stopped then player is not grouunded
 }
-
-// for contact_force_event in contact_force_events.read() {
-//     println!("Received contact force event: {:?}", contact_force_event);
-// }
