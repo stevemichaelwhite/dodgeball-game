@@ -1,15 +1,16 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-
 pub use bevy_third_person_camera::ThirdPersonCameraPlugin;
 
 mod camera;
+mod fox;
 mod player;
 mod world;
 
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use camera::CameraPlugin;
+use fox::FoxPlugin;
 use player::PlayerPlugin;
 use world::WorldPlugin;
 
@@ -19,6 +20,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins,
             PlayerPlugin,
+            FoxPlugin,
             CameraPlugin,
             WorldPlugin,
             ThirdPersonCameraPlugin,
@@ -26,11 +28,6 @@ fn main() {
         ))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(RapierDebugRenderPlugin::default())
-        
         // .add_systems(Update, print_ball_altitude)
         .run();
 }
-
-
-
-
